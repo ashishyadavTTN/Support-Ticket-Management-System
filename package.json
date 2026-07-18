@@ -1,0 +1,26 @@
+{
+  "name": "support-ticket-management",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Support Ticket Management System — AI capability exercise",
+  "scripts": {
+    "install:all": "npm install && npm install --prefix src/backend && npm install --prefix src/frontend",
+    "dev:backend": "npm run dev --prefix src/backend",
+    "dev:frontend": "npm run dev --prefix src/frontend",
+    "dev": "concurrently \"npm run dev:backend\" \"npm run dev:frontend\"",
+    "start:backend": "npm start --prefix src/backend",
+    "build:frontend": "npm run build --prefix src/frontend",
+    "test": "npm test --prefix src/backend",
+    "db:migrate": "npx sequelize-cli db:migrate",
+    "db:migrate:undo": "npx sequelize-cli db:migrate:undo",
+    "db:seed": "npx sequelize-cli db:seed:all",
+    "db:seed:undo": "npx sequelize-cli db:seed:undo:all"
+  },
+  "devDependencies": {
+    "concurrently": "^9.1.2",
+    "dotenv": "^16.4.7",
+    "sequelize": "^6.37.5",
+    "sequelize-cli": "^6.6.2",
+    "tedious": "^18.6.1"
+  }
+}
