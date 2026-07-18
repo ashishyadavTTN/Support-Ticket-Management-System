@@ -14,7 +14,7 @@ router.use(authenticate);
 
 router.post(
   '/',
-  authorize(ROLES.CUSTOMER, ROLES.ADMIN),
+  authorize(ROLES.CUSTOMER, ROLES.ADMIN, ROLES.REPRESENTATIVE),
   checkPermission(PERMISSION_KEYS.CAN_CREATE_TICKETS),
   validate([
     body('title').trim().notEmpty().withMessage('Title is required'),
@@ -41,6 +41,7 @@ router.get(
   ticketController.getTickets
 );
 
+router.get('/customers', ticketController.listCustomers);
 router.get('/assignees', ticketController.listAssignees);
 
 router.get(

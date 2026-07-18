@@ -2,21 +2,28 @@
 
 ## Core
 
-- [ ] <!-- Ticket CRUD API endpoints respond correctly -->
-- [ ] <!-- Comments can be added and listed per ticket -->
+- [x] Ticket CRUD API endpoints respond correctly
+- [x] Comments can be added and listed per ticket
+- [x] Users can create and view tickets via UI (role-specific flows)
 
 ## Validation
 
-- [ ] <!-- Status transitions follow state machine rules -->
+- [x] Status transitions follow state machine rules (backend enforced)
+- [x] Invalid transitions return `400`
+- [x] Server-side validation via `express-validator` and model hooks
 
 ## Error Handling
 
-- [ ] <!-- Consistent error responses from API -->
+- [x] Consistent JSON error responses from API (`errorHandler`, `HttpError`)
+- [x] Frontend toasts and `ErrorState` for user-facing failures
 
 ## Testing
 
-- [ ] <!-- Integration tests pass for status transitions -->
+- [x] Integration tests pass for status transitions (valid, invalid, terminal, customer 403)
+- [x] Auth, RBAC, CRUD, admin, dashboard, and assignment suites pass (`npm test`)
+- [ ] Frontend automated tests (manual UI validation only)
 
 ## Documentation
 
-- [ ] <!-- API contract and data model kept up to date -->
+- [x] API contract and data model kept up to date
+- [x] `tool-workflow.md`, `debugging-notes.md`, `test-results.md` reflect current state

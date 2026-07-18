@@ -2,40 +2,50 @@
 
 ## Name
 
-<!-- Your full name. -->
+Ashish Yadav
 
 ## Role
 
-<!-- Your current or target role. -->
+Full-stack developer (assessment submission)
 
 ## Primary Technology Stack
 
-<!-- e.g. Node.js, React, MSSQL. -->
+Node.js, Express, React, Vite, Sequelize, Microsoft SQL Server
 
 ## Primary AI Tool Used
 
-<!-- e.g. Cursor, Copilot, ChatGPT. -->
+Cursor
 
 ## Project Option Selected
 
-<!-- Support Ticket Management System. -->
+Support Ticket Management System
 
 ## Assessment Start Date
 
-<!-- YYYY-MM-DD. -->
+2026-01-01
 
 ## Submission Date
 
-<!-- YYYY-MM-DD. -->
+2026-07-18
 
 ## Project Summary
 
-<!-- Brief summary of what you built. -->
+Built a full-stack support ticket platform with JWT authentication, role-based access control (admin, representative, customer), ticket CRUD with enforced status state machine, comments, keyword search and status filtering, and role-specific React UIs. Backend integration test suite covers auth, RBAC, CRUD, state transitions, admin management, dashboards, and ticket auto-assignment.
 
 ## Tools Used
 
-<!-- List all tools, IDEs, and AI assistants used. -->
+- **IDE:** Cursor
+- **AI:** Cursor Agent for scaffolding, implementation, debugging, tests, and documentation
+- **Runtime:** Node.js 22, npm
+- **Database:** SQL Server (local) via Sequelize + tedious
+- **Testing:** Jest + Supertest
 
 ## Setup Summary
 
-<!-- How you set up the project locally. -->
+1. `npm run install:all` from `ai-practical-assessment/`
+2. Copy `src/backend/.env.example` → `src/backend/.env` and configure MSSQL credentials
+3. `npm run db:migrate` && `npm run db:seed`
+4. `npm run dev` — frontend :5173, backend :3001
+5. `npm test` — 56 integration tests against seeded database
+
+See `README.md` and `database/setup-notes.md` for details.

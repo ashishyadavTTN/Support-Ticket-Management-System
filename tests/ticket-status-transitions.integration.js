@@ -119,4 +119,134 @@ describe('Ticket status transitions', () => {
     expect(res.status).toBe(403);
     expect(res.body.error).toMatch(/access denied|cannot change ticket status/i);
   });
+
+  it('PATCH /tickets/:id/status — open to cancelled', async () => {
+    const { accessToken: customerToken } = await loginAs(USERS.customerEve);
+    const createRes = await withAuth(customerToken).post('/tickets').send({
+      title: `Cancel from open ${Date.now()}`,
+      description: 'Valid open to cancelled transition',
+    });
+
+    const tempId = createRes.body.id;
+    const { accessToken } = await loginAs(USERS.admin);
+
+    const res = await withAuth(accessToken)
+      .patch(`/tickets/${tempId}/status`)
+      .send({ status: 'cancelled' });
+
+    expect(res.status).toBe(200);
+    expect(res.body.status).toBe('cancelled');
+
+    await Ticket.destroy({ where: { id: tempId } });
+  });
+
+  it('PATCH /tickets/:id/status — in_progress to cancelled', async () => {
+    const { accessToken: customerToken } = await loginAs(USERS.customerEve);
+    const createRes = await withAuth(customerToken).post('/tickets').send({
+      title: `Cancel from in_progress ${Date.now()}`,
+      description: 'Valid in_progress to cancelled transition',
+    });
+
+    const tempId = createRes.body.id;
+    const { accessToken } = await loginAs(USERS.admin);
+
+    await withAuth(accessToken)
+      .patch(`/tickets/${tempId}/status`)
+      .send({ status: 'in_progress' });
+
+    const res = await withAuth(accessToken)
+      .patch(`/tickets/${tempId}/status`)
+      .send({ status: 'cancelled' });
+
+    expect(res.status).toBe(200);
+    expect(res.body.status).toBe('cancelled');
+
+    await Ticket.destroy({ where: { id: tempId } });
+  });
+
+  it('PATCH /tickets/:id/status — rejects resolved to open (non-terminal invalid)', async () => {
+    const { accessToken: customerToken } = await loginAs(USERS.customerDave);
+    const createRes = await withAuth(customerToken).post('/tickets').send({
+      title: `Resolved to open test ${Date.now()}`,
+      description: 'resolved may reopen to in_progress but not jump straight to open',
+    });
+
+    const tempId = createRes.body.id;
+    const { accessToken } = await loginAs(USERS.admin);
+
+    await withAuth(accessToken)
+      .patch(`/tickets/${tempId}/status`)
+      .send({ status: 'in_progress' });
+
+    const resolvedRes = await withAuth(accessToken)
+      .patch(`/tickets/${tempId}/status`)
+      .send({ status: 'resolved' });
+
+    expect(resolvedRes.status).toBe(200);
+
+    const resolvedToOpen = await withAuth(accessToken)
+      .patch(`/tickets/${tempId}/status`)
+      .send({ status: 'open' });
+
+    expect(resolvedToOpen.status).toBe(400);
+    expect(resolvedToOpen.body.error).toMatch(/cannot transition/i);
+
+    await Ticket.destroy({ where: { id: tempId } });
+  });
+
+  it('PATCH /tickets/:id/status — rejects transitions from terminal statuses', async () => {
+    const { accessToken: customerToken } = await loginAs(USERS.customerDave);
+    const createRes = await withAuth(customerToken).post('/tickets').send({
+      title: `Terminal status test ${Date.now()}`,
+      description: 'Should not reopen from closed or cancelled',
+    });
+
+    const tempId = createRes.body.id;
+    const { accessToken } = await loginAs(USERS.admin);
+
+    await withAuth(accessToken)
+      .patch(`/tickets/${tempId}/status`)
+      .send({ status: 'cancelled' });
+
+    const fromCancelled = await withAuth(accessToken)
+      .patch(`/tickets/${tempId}/status`)
+      .send({ status: 'open' });
+
+    expect(fromCancelled.status).toBe(400);
+    expect(fromCancelled.body.error).toMatch(/cannot transition/i);
+
+    const fromCancelledToProgress = await withAuth(accessToken)
+      .patch(`/tickets/${tempId}/status`)
+      .send({ status: 'in_progress' });
+
+    expect(fromCancelledToProgress.status).toBe(400);
+
+    const closedTicketRes = await withAuth(customerToken).post('/tickets').send({
+      title: `Closed terminal test ${Date.now()}`,
+      description: 'Should not reopen from closed',
+    });
+
+    const closedId = closedTicketRes.body.id;
+
+    await withAuth(accessToken)
+      .patch(`/tickets/${closedId}/status`)
+      .send({ status: 'in_progress' });
+
+    await withAuth(accessToken)
+      .patch(`/tickets/${closedId}/status`)
+      .send({ status: 'resolved' });
+
+    await withAuth(accessToken)
+      .patch(`/tickets/${closedId}/status`)
+      .send({ status: 'closed' });
+
+    const fromClosed = await withAuth(accessToken)
+      .patch(`/tickets/${closedId}/status`)
+      .send({ status: 'open' });
+
+    expect(fromClosed.status).toBe(400);
+    expect(fromClosed.body.error).toMatch(/cannot transition/i);
+
+    await Ticket.destroy({ where: { id: [tempId, closedId] } });
+  });
 });

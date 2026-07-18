@@ -21,6 +21,10 @@ export async function getTicketById(id) {
   return apiFetch(`/tickets/${id}`);
 }
 
+export async function getCustomers() {
+  return apiFetch('/tickets/customers');
+}
+
 export async function getAssignees() {
   return apiFetch('/tickets/assignees');
 }

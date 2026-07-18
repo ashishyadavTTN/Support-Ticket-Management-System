@@ -43,7 +43,7 @@ module.exports = {
         passwordHash,
         isActive: true,
         permissions: JSON.stringify({
-          canCreateTickets: false,
+          canCreateTickets: true,
           canComment: true,
           canChangeStatus: true,
           canAssignTickets: true,

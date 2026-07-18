@@ -27,6 +27,7 @@ describe('Ticket CRUD', () => {
         status: 'open',
         priority: 'high',
       });
+      expect(res.body.assignedTo).not.toBeNull();
 
       createdTicketId = res.body.id;
     });
@@ -70,6 +71,16 @@ describe('Ticket CRUD', () => {
           `${t.title} ${t.description}`.toLowerCase().includes('password')
         )
       ).toBe(true);
+    });
+
+    it('filters tickets by status', async () => {
+      const { accessToken } = await loginAs(USERS.admin);
+
+      const res = await withAuth(accessToken).get('/tickets?status=open&limit=100');
+
+      expect(res.status).toBe(200);
+      expect(res.body.tickets.length).toBeGreaterThan(0);
+      expect(res.body.tickets.every((t) => t.status === 'open')).toBe(true);
     });
   });
 

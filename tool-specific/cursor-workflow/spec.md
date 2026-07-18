@@ -156,5 +156,4 @@ No status-history table — resolution timing uses `Tickets.resolvedAt` only.
 - Real-time updates (WebSockets / SSE)
 - Multi-tenant organizations
 - Frontend automated test suite
-- Full backend integration test coverage (only health check implemented; status tests are `it.todo`)
 - Production deployment / CI pipeline

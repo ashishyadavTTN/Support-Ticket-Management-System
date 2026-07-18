@@ -8,29 +8,39 @@ const {
 const { PERMISSION_KEYS } = require('../constants/permissions');
 const { isValidTransition } = require('../constants/statusTransitions');
 const { parseCsvParam, buildOrderClause } = require('../utils/ticketQuery');
+const { findRepresentativeWithLowestQueue } = require('../utils/ticketAssignment');
+const { ROLES } = require('../constants/roles');
 const userAttributes = ['id', 'name', 'email', 'role'];
 
 async function createTicket(req, res, next) {
   try {
+    const perms = req.user.getEffectivePermissions();
     const payload = {
       title: req.body.title,
       description: req.body.description,
       priority: req.body.priority || 'medium',
       status: 'open',
-      createdBy: req.user.id,
     };
 
-    if (req.user.role === 'admin' && req.body.createdBy) {
+    if (req.user.role === ROLES.CUSTOMER) {
+      payload.createdBy = req.user.id;
+    } else {
+      if (!req.body.createdBy) {
+        throw new HttpError(400, 'createdBy (customer) is required.');
+      }
       payload.createdBy = req.body.createdBy;
     }
 
-    if (req.user.role === 'admin' || req.user.role === 'representative') {
+    if (req.user.role === ROLES.ADMIN || req.user.role === ROLES.REPRESENTATIVE) {
       if (req.body.assignedTo !== undefined) {
-        const perms = req.user.getEffectivePermissions();
-        if (req.user.role === 'admin' || perms.canAssignTickets) {
+        if (req.user.role === ROLES.ADMIN || perms.canAssignTickets) {
           payload.assignedTo = req.body.assignedTo;
         }
       }
+    }
+
+    if (req.user.role === ROLES.CUSTOMER && payload.assignedTo === undefined) {
+      payload.assignedTo = await findRepresentativeWithLowestQueue();
     }
 
     const ticket = await Ticket.create(payload);
@@ -214,6 +224,25 @@ async function updateTicketStatus(req, res, next) {
   }
 }
 
+async function listCustomers(req, res, next) {
+  try {
+    const perms = req.user.getEffectivePermissions();
+    if (req.user.role !== ROLES.ADMIN && !perms.canCreateTickets) {
+      throw new HttpError(403, 'Insufficient permissions to list customers.');
+    }
+
+    const customers = await User.findAll({
+      where: { role: ROLES.CUSTOMER, isActive: true },
+      attributes: ['id', 'name', 'email'],
+      order: [['name', 'ASC']],
+    });
+
+    return res.json({ customers });
+  } catch (err) {
+    return next(err);
+  }
+}
+
 async function listAssignees(req, res, next) {
   try {
     const perms = req.user.getEffectivePermissions();
@@ -279,6 +308,7 @@ module.exports = {
   getTicketById,
   updateTicket,
   updateTicketStatus,
+  listCustomers,
   listAssignees,
   createComment,
   getComments,

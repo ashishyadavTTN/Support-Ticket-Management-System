@@ -18,7 +18,7 @@
 - [x] UX polish — loading bar, breadcrumbs, toasts, skeleton states
 - [x] Bug fix — Modal/SlidePanel focus loss on keystroke (`Modal.jsx`, `SlidePanel.jsx`)
 - [x] Bug fix — Representative permissions JSON string parsing (`User.js`)
-- [x] **Backend integration tests** — 45 tests across 7 suites (`tests/`)
+- [x] **Backend integration tests** — 56 tests across 8 suites (`tests/`)
 
 ## In Progress
 
@@ -28,4 +28,3 @@
 
 - [ ] Frontend automated tests (no test runner configured)
 - [ ] Browser E2E tests (Playwright/Cypress)
-- [ ] Candidate workflow docs — `tool-workflow.md`, `ai-prompts/` updates

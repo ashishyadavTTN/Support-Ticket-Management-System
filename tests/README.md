@@ -1,6 +1,6 @@
-# Integration Tests
+# Backend Tests
 
-Backend API integration tests using **Jest + Supertest**. Tests import the Express `app` directly (no live server required).
+Backend tests using **Jest** (+ **Supertest** for API integration). Integration tests import the Express `app` directly (no live server required). A small unit tier covers pure logic without any database.
 
 ## Prerequisites
 
@@ -20,15 +20,19 @@ npm test
 
 | File | Coverage |
 |------|----------|
-| `setup.js` | Loads env, connects DB, closes connection after suite |
+| `setup.js` | Loads env, verifies DB connectivity (warns if unavailable so unit tests still run), closes connection after suite |
 | `helpers/testApi.js` | Login helper, authenticated request wrapper, seeded user emails |
+| `unit/statusTransitions.test.js` | Pure state-machine logic (valid/invalid/terminal transitions) — no DB required |
 | `health.integration.js` | `GET /health` |
 | `auth.integration.js` | Register, login, refresh, logout, profile, password |
-| `ticket-status-transitions.integration.js` | Status state machine, `resolvedAt`, 404/403 |
-| `ticket-crud.integration.js` | Create, list, detail, update, comments |
+| `ticket-status-transitions.integration.js` | State machine (valid, invalid, terminal, `resolvedAt`, 403/404) |
+| `ticket-crud.integration.js` | Create, list, search, status filter, detail, update, comments |
 | `ticket-rbac.integration.js` | Role scoping, access boundaries, admin route protection |
+| `ticket-assignment.integration.js` | Auto-assign, rep `canCreateTickets`, customer list gating |
 | `admin.integration.js` | Representatives, customers, permissions, deactivation |
 | `dashboard.integration.js` | Admin and role-scoped dashboard stats |
+
+**Total:** 8 integration suites plus 1 unit suite. See `test-results.md` for the latest recorded counts (re-run `npm test` after adding tests).
 
 ## Seeded test users
 

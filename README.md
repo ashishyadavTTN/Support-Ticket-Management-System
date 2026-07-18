@@ -150,4 +150,4 @@ Assessment artifacts live at the repo root. Key technical references:
 
 ## AI Capability Exercise
 
-This repository is scaffolded for an AI-assisted development assessment. Prompt logs are in `ai-prompts/`; personal reflection and candidate info are left for the author to complete.
+This repository documents an AI-assisted development assessment. Prompt logs are in `ai-prompts/`; workflow, reflection, and candidate info are in the root markdown files listed in the exercise structure.

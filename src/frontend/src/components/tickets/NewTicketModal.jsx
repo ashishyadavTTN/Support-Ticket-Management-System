@@ -1,7 +1,5 @@
 import { useEffect, useState } from 'react';
-import { createTicket } from '../../api/tickets';
-import { getCustomers, getRepresentatives } from '../../api/admin';
-import { getAssignees } from '../../api/tickets';
+import { createTicket, getAssignees, getCustomers } from '../../api/tickets';
 import { useAuth } from '../../context/AuthContext';
 import { useToast } from '../../context/ToastContext';
 import { ROLES } from '../../constants/roles';
@@ -17,6 +15,8 @@ export default function NewTicketModal({ isOpen, onClose, onCreated }) {
   const { user } = useAuth();
   const toast = useToast();
   const isAdmin = user?.role === ROLES.ADMIN;
+  const canCreateForCustomer =
+    isAdmin || user?.permissions?.canCreateTickets;
   const canAssign =
     user?.role === ROLES.ADMIN || user?.permissions?.canAssignTickets;
 
@@ -48,14 +48,11 @@ export default function NewTicketModal({ isOpen, onClose, onCreated }) {
 
     async function loadOptions() {
       try {
-        if (isAdmin) {
-          const [custData, repData] = await Promise.all([
-            getCustomers(),
-            getRepresentatives({ activeOnly: true }),
-          ]);
+        if (canCreateForCustomer) {
+          const custData = await getCustomers();
           setCustomers(custData.customers || []);
-          setRepresentatives(repData.representatives || []);
-        } else if (canAssign) {
+        }
+        if (canAssign) {
           const repData = await getAssignees();
           setRepresentatives(repData.representatives || []);
         }
@@ -65,7 +62,7 @@ export default function NewTicketModal({ isOpen, onClose, onCreated }) {
     }
 
     loadOptions();
-  }, [isOpen, isAdmin, canAssign]);
+  }, [isOpen, canCreateForCustomer, canAssign]);
 
   const handleChange = (e) => {
     const { name, value } = e.target;
@@ -77,7 +74,7 @@ export default function NewTicketModal({ isOpen, onClose, onCreated }) {
     const next = {};
     if (!form.title.trim()) next.title = 'Title is required';
     if (!form.description.trim()) next.description = 'Description is required';
-    if (isAdmin && !form.createdBy) next.createdBy = 'Customer is required';
+    if (canCreateForCustomer && !form.createdBy) next.createdBy = 'Customer is required';
     setErrors(next);
     return Object.keys(next).length === 0;
   };
@@ -95,7 +92,7 @@ export default function NewTicketModal({ isOpen, onClose, onCreated }) {
         priority: form.priority,
       };
 
-      if (isAdmin && form.createdBy) {
+      if (canCreateForCustomer && form.createdBy) {
         payload.createdBy = parseInt(form.createdBy, 10);
       }
 
@@ -175,7 +172,7 @@ export default function NewTicketModal({ isOpen, onClose, onCreated }) {
           <option value="critical">Critical</option>
         </Select>
 
-        {isAdmin && (
+        {canCreateForCustomer && (
           <Select
             label="Customer"
             name="createdBy"
