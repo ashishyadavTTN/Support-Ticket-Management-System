@@ -1,7 +1,8 @@
 import { Link } from 'react-router-dom';
 import Badge from '../ui/Badge';
-import { formatRelativeTime } from '../../utils/formatRelativeTime';
 import { cn } from '../../utils/cn';
+import { formatRelativeTime } from '../../utils/formatRelativeTime';
+import { formatTicketId } from '../../utils/formatTicketId';
 
 export default function CustomerTicketCard({ ticket, className }) {
   return (
@@ -27,7 +28,7 @@ export default function CustomerTicketCard({ ticket, className }) {
       </div>
 
       <div className="mt-auto flex items-center justify-between border-t border-surface-100 pt-3 text-caption text-surface-500 dark:border-surface-800 dark:text-surface-400">
-        <span className="font-medium">#{ticket.id}</span>
+        <span className="font-medium">{formatTicketId(ticket.id)}</span>
         <span>{formatRelativeTime(ticket.createdAt)}</span>
       </div>
     </Link>

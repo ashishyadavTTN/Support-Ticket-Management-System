@@ -1,4 +1,5 @@
 import { ROLES } from './roles';
+import { formatTicketId } from '../utils/formatTicketId';
 
 const ROOTS = {
   [ROLES.ADMIN]: [
@@ -22,7 +23,7 @@ const ADMIN_REP_ROOT = [
 
 export function getTicketBreadcrumbs(role, ticketId) {
   const root = ROOTS[role] || ROOTS[ROLES.CUSTOMER];
-  return [...root, { label: `#${ticketId}`, current: true }];
+  return [...root, { label: formatTicketId(ticketId), current: true }];
 }
 
 export function getRepresentativeBreadcrumbs(name) {

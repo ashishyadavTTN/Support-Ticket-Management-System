@@ -8,6 +8,7 @@ import LoadingState from '../../components/LoadingState';
 import ErrorState from '../../components/ErrorState';
 import Badge from '../../components/ui/Badge';
 import { AttachmentGallery } from '../../components/attachments/AttachmentImage';
+import { formatTicketId } from '../../utils/formatTicketId';
 
 export default function InternalTicketDetail() {
   const { id } = useParams();
@@ -51,7 +52,7 @@ export default function InternalTicketDetail() {
           <div>
             <h1 className="text-h1 text-surface-900 dark:text-surface-100">{ticket.title}</h1>
             <p className="mt-1 text-body-sm text-surface-500 dark:text-surface-400">
-              Ticket #{ticket.id}
+              Ticket {formatTicketId(ticket.id)}
             </p>
           </div>
           <div className="flex gap-2">

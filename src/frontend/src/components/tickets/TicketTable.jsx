@@ -1,6 +1,7 @@
 import Badge from '../ui/Badge';
 import Avatar from '../ui/Avatar';
 import { formatRelativeTime } from '../../utils/formatRelativeTime';
+import { formatTicketId } from '../../utils/formatTicketId';
 import { cn } from '../../utils/cn';
 
 function SortIcon({ active, direction }) {
@@ -97,7 +98,7 @@ export default function TicketTable({
               )}
             >
               <td className="px-4 py-3 text-body-sm font-medium text-surface-500 dark:text-surface-400">
-                #{ticket.id}
+                {formatTicketId(ticket.id)}
               </td>
               <td className="px-4 py-3">
                 <p className="truncate text-body-sm font-medium text-surface-900 dark:text-surface-100">
@@ -149,7 +150,7 @@ export function TicketMobileList({ tickets, selectedTicketId, onRowClick }) {
         >
           <div className="flex items-start justify-between gap-3">
             <div className="min-w-0 flex-1">
-              <p className="text-caption font-medium text-surface-500 dark:text-surface-400">#{ticket.id}</p>
+              <p className="text-caption font-medium text-surface-500 dark:text-surface-400">{formatTicketId(ticket.id)}</p>
               <p className="mt-0.5 text-body font-medium text-surface-900 dark:text-surface-100">{ticket.title}</p>
             </div>
             <div className="flex shrink-0 flex-col items-end gap-1.5">

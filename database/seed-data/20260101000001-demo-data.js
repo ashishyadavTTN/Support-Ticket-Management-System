@@ -1,5 +1,14 @@
 'use strict';
 
+const TICKET_IDS = {
+  loginPortal: 'a1000001-0001-4000-8000-000000000001',
+  exportFeature: 'a1000001-0001-4000-8000-000000000002',
+  billingDiscrepancy: 'a1000001-0001-4000-8000-000000000003',
+  mobileCrash: 'a1000001-0001-4000-8000-000000000004',
+  shippingAddress: 'a1000001-0001-4000-8000-000000000005',
+  subscriptionRenewal: 'a1000001-0001-4000-8000-000000000006',
+};
+
 /** @type {import('sequelize-cli').Migration} */
 module.exports = {
   async up(queryInterface) {
@@ -115,6 +124,7 @@ module.exports = {
 
     await queryInterface.bulkInsert('Tickets', [
       {
+        id: TICKET_IDS.loginPortal,
         title: 'Cannot log in to portal',
         description: 'Password reset link returns a 404 error.',
         priority: 'high',
@@ -125,6 +135,7 @@ module.exports = {
         updatedAt: now,
       },
       {
+        id: TICKET_IDS.exportFeature,
         title: 'Request feature: export tickets',
         description: 'Would like CSV export for ticket history.',
         priority: 'low',
@@ -135,6 +146,7 @@ module.exports = {
         updatedAt: now,
       },
       {
+        id: TICKET_IDS.billingDiscrepancy,
         title: 'Billing discrepancy on invoice #4521',
         description: 'Charged twice for the same subscription period.',
         priority: 'critical',
@@ -145,6 +157,7 @@ module.exports = {
         updatedAt: now,
       },
       {
+        id: TICKET_IDS.mobileCrash,
         title: 'Mobile app crashes on startup',
         description: 'App closes immediately after splash screen on Android 14.',
         priority: 'high',
@@ -155,6 +168,7 @@ module.exports = {
         updatedAt: now,
       },
       {
+        id: TICKET_IDS.shippingAddress,
         title: 'Update shipping address',
         description: 'Need to change delivery address before next shipment.',
         priority: 'medium',
@@ -165,6 +179,7 @@ module.exports = {
         updatedAt: now,
       },
       {
+        id: TICKET_IDS.subscriptionRenewal,
         title: 'Question about subscription renewal',
         description: 'Will my plan auto-renew at the current rate?',
         priority: 'low',
@@ -176,12 +191,14 @@ module.exports = {
       },
     ]);
 
-    const [insertedTickets] = await queryInterface.sequelize.query(
-      `SELECT id, title FROM Tickets WHERE createdBy IN (${Object.values(userId).join(', ')}) ORDER BY id`
-    );
-    const ticketId = Object.fromEntries(
-      insertedTickets.map((row) => [row.title, row.id])
-    );
+    const ticketId = {
+      'Cannot log in to portal': TICKET_IDS.loginPortal,
+      'Request feature: export tickets': TICKET_IDS.exportFeature,
+      'Billing discrepancy on invoice #4521': TICKET_IDS.billingDiscrepancy,
+      'Mobile app crashes on startup': TICKET_IDS.mobileCrash,
+      'Update shipping address': TICKET_IDS.shippingAddress,
+      'Question about subscription renewal': TICKET_IDS.subscriptionRenewal,
+    };
 
     await queryInterface.bulkInsert('Comments', [
       {

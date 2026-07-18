@@ -10,7 +10,7 @@ const Attachment = sequelize.define(
       autoIncrement: true,
     },
     ticketId: {
-      type: DataTypes.INTEGER,
+      type: DataTypes.UUID,
       allowNull: false,
       references: {
         model: 'Tickets',

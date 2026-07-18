@@ -86,7 +86,7 @@ router.get('/assignees', ticketController.listAssignees);
 
 router.get(
   '/:id',
-  validate([param('id').isInt()]),
+  validate([param('id').isUUID()]),
   ticketController.getTicketById
 );
 
@@ -94,7 +94,7 @@ router.put(
   '/:id',
   authorize(ROLES.ADMIN, ROLES.REPRESENTATIVE),
   validate([
-    param('id').isInt(),
+    param('id').isUUID(),
     body('title').optional().trim().notEmpty(),
     body('description').optional().isString(),
     body('priority').optional().isIn(['low', 'medium', 'high', 'critical']),
@@ -108,7 +108,7 @@ router.patch(
   authorize(ROLES.ADMIN, ROLES.REPRESENTATIVE),
   checkPermission(PERMISSION_KEYS.CAN_CHANGE_STATUS),
   validate([
-    param('id').isInt(),
+    param('id').isUUID(),
     body('status').notEmpty().withMessage('status is required'),
   ]),
   ticketController.updateTicketStatus
@@ -118,7 +118,7 @@ router.post(
   '/:id/comments',
   checkPermission(PERMISSION_KEYS.CAN_COMMENT),
   optionalMultipart('attachments'),
-  validate([param('id').isInt()]),
+  validate([param('id').isUUID()]),
   (req, res, next) => {
     const contentType = req.headers['content-type'] || '';
     if (contentType.includes('multipart/form-data')) {
@@ -133,13 +133,13 @@ router.post(
 
 router.get(
   '/:id/comments',
-  validate([param('id').isInt()]),
+  validate([param('id').isUUID()]),
   ticketController.getComments
 );
 
 router.get(
   '/:id/attachments/:attachmentId',
-  validate([param('id').isInt(), param('attachmentId').isInt()]),
+  validate([param('id').isUUID(), param('attachmentId').isInt()]),
   ticketController.getAttachment
 );
 

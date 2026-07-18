@@ -77,18 +77,24 @@ describe('Ticket image attachments', () => {
 
   describe('POST /tickets/:id/comments with attachments', () => {
     beforeEach(async () => {
-      const { accessToken } = await loginAs(USERS.customer);
-      const createRes = await withAuth(accessToken).post('/tickets').send({
+      const { accessToken: customerToken } = await loginAs(USERS.customer);
+      const createRes = await withAuth(customerToken).post('/tickets').send({
         title: 'Attachment comment test',
         description: 'Base ticket',
       });
       createdTicketId = createRes.body.id;
+
+      const { accessToken: adminToken } = await loginAs(USERS.admin);
+      const { user: repUser } = await loginAs(USERS.rep);
+      await withAuth(adminToken)
+        .put(`/tickets/${createdTicketId}`)
+        .send({ assignedTo: repUser.id });
     });
 
     it('allows all roles to comment with images', async () => {
       const roles = [
         { user: USERS.customer, label: 'customer' },
-        { user: USERS.repAll, label: 'representative' },
+        { user: USERS.rep, label: 'representative' },
         { user: USERS.admin, label: 'admin' },
       ];
 
@@ -167,7 +173,7 @@ describe('Ticket image attachments', () => {
       const deniedRes = await withAuth(otherCustomerToken).get(
         `/tickets/${createdTicketId}/attachments/${attachmentId}`
       );
-      expect(deniedRes.status).toBe(403);
+      expect(deniedRes.status).toBe(404);
     });
   });
 });

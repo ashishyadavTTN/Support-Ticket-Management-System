@@ -7,6 +7,7 @@ import {
 } from '../../api/tickets';
 import { useAuth } from '../../context/AuthContext';
 import { useToast } from '../../context/ToastContext';
+import { formatTicketId } from '../../utils/formatTicketId';
 import { ROLES } from '../../constants/roles';
 import {
   TICKET_STATUSES,
@@ -165,7 +166,7 @@ export default function TicketDetailPanel({
       isOpen={isOpen}
       onClose={onClose}
       title={ticket ? ticket.title : 'Loading...'}
-      subtitle={ticket ? `Ticket #${ticket.id}` : undefined}
+      subtitle={ticket ? `Ticket ${formatTicketId(ticket.id)}` : undefined}
     >
       {loading || !ticket ? (
         <SkeletonList count={2} />

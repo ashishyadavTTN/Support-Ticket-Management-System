@@ -52,8 +52,8 @@ describe('Ticket RBAC', () => {
       const { accessToken: carolToken } = await loginAs(USERS.customer);
       const res = await withAuth(carolToken).get(`/tickets/${daveTicketId}`);
 
-      expect(res.status).toBe(403);
-      expect(res.body.error).toMatch(/permission/i);
+      expect(res.status).toBe(404);
+      expect(res.body.error).toMatch(/not found/i);
     });
 
     it('customer cannot update tickets', async () => {
@@ -71,7 +71,7 @@ describe('Ticket RBAC', () => {
   });
 
   describe('Representative access boundaries', () => {
-    it('rep without canViewAllTickets only sees assigned tickets', async () => {
+    it('rep only sees assigned and unassigned tickets', async () => {
       const { accessToken: adminToken } = await loginAs(USERS.admin);
       const email = uniqueEmail('scoped-rep');
 
@@ -89,17 +89,40 @@ describe('Ticket RBAC', () => {
       const res = await withAuth(accessToken).get('/tickets?limit=100');
 
       expect(res.status).toBe(200);
-      expect(res.body.tickets.every((t) => t.assignedTo === user.id)).toBe(true);
+      expect(
+        res.body.tickets.every(
+          (t) => t.assignedTo === user.id || t.assignedTo === null
+        )
+      ).toBe(true);
     });
 
-    it('rep with canViewAllTickets sees all tickets', async () => {
-      const { accessToken: adminToken } = await loginAs(USERS.admin);
-      const adminList = await withAuth(adminToken).get('/tickets?limit=100');
+    it('rep cannot view tickets assigned to another representative', async () => {
+      const { accessToken: bobToken } = await loginAs(USERS.rep);
+      const bobTickets = await withAuth(bobToken).get('/tickets?limit=100');
+      const bobAssignedTicket = bobTickets.body.tickets.find(
+        (t) => t.assignedTo !== null
+      );
+      expect(bobAssignedTicket).toBeTruthy();
 
-      const dianaList = await withAuth(privilegedRepToken).get('/tickets?limit=100');
+      const { accessToken: dianaToken } = await loginAs(USERS.repAll);
+      const res = await withAuth(dianaToken).get(`/tickets/${bobAssignedTicket.id}`);
 
-      expect(dianaList.status).toBe(200);
-      expect(dianaList.body.pagination.total).toBe(adminList.body.pagination.total);
+      expect(res.status).toBe(404);
+      expect(res.body.error).toMatch(/not found/i);
+    });
+
+    it('rep with canViewAllTickets still cannot view another rep assigned ticket', async () => {
+      const { accessToken: bobToken } = await loginAs(USERS.rep);
+      const bobTickets = await withAuth(bobToken).get('/tickets?limit=100');
+      const bobAssignedTicket = bobTickets.body.tickets.find(
+        (t) => t.assignedTo !== null
+      );
+      expect(bobAssignedTicket).toBeTruthy();
+
+      const res = await withAuth(privilegedRepToken).get(`/tickets/${bobAssignedTicket.id}`);
+
+      expect(res.status).toBe(404);
+      expect(res.body.error).toMatch(/not found/i);
     });
 
     it('users without canAssignTickets cannot list assignees', async () => {

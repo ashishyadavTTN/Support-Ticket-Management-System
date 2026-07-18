@@ -72,7 +72,7 @@ describe('Ticket status transitions', () => {
     const { accessToken } = await loginAs(USERS.admin);
 
     const res = await withAuth(accessToken)
-      .patch('/tickets/999999/status')
+      .patch('/tickets/00000000-0000-0000-0000-000000000000/status')
       .send({ status: 'in_progress' });
 
     expect(res.status).toBe(404);

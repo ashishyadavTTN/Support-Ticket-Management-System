@@ -1,5 +1,8 @@
+const { Op } = require('sequelize');
 const { CUSTOMER_PERMISSIONS } = require('../constants/permissions');
 const HttpError = require('./httpError');
+
+const DENY_ALL_TICKET_ID = '00000000-0000-0000-0000-000000000000';
 
 function toSafeUser(user) {
   return {
@@ -14,6 +17,7 @@ function toSafeUser(user) {
 
 /**
  * Build Sequelize `where` clause for ticket list queries based on role.
+ * Access is always derived from the authenticated user in the JWT.
  */
 function buildTicketListFilter(user) {
   if (user.role === 'admin') {
@@ -25,14 +29,12 @@ function buildTicketListFilter(user) {
   }
 
   if (user.role === 'representative') {
-    const perms = user.getEffectivePermissions();
-    if (perms.canViewAllTickets) {
-      return {};
-    }
-    return { assignedTo: user.id };
+    return {
+      [Op.or]: [{ assignedTo: user.id }, { assignedTo: null }],
+    };
   }
 
-  return { id: -1 };
+  return { id: DENY_ALL_TICKET_ID };
 }
 
 /**
@@ -50,22 +52,15 @@ function canAccessTicket(user, ticket) {
   }
 
   if (user.role === 'representative') {
-    const perms = user.getEffectivePermissions();
-    if (perms.canViewAllTickets) {
-      return true;
-    }
-    return ticket.assignedTo === user.id;
+    return ticket.assignedTo === user.id || ticket.assignedTo === null;
   }
 
   return false;
 }
 
 function assertTicketAccess(user, ticket) {
-  if (!ticket) {
+  if (!ticket || !canAccessTicket(user, ticket)) {
     throw new HttpError(404, 'Ticket not found');
-  }
-  if (!canAccessTicket(user, ticket)) {
-    throw new HttpError(403, 'You do not have permission to access this ticket');
   }
 }
 

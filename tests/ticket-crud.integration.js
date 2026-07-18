@@ -30,6 +30,9 @@ describe('Ticket CRUD', () => {
       expect(res.body.assignedTo).not.toBeNull();
 
       createdTicketId = res.body.id;
+      expect(res.body.id).toMatch(
+        /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i
+      );
     });
 
     it('returns 400 when title is missing', async () => {

@@ -3,6 +3,7 @@ import { Link, useParams } from 'react-router-dom';
 import { createComment, getTicketById } from '../../api/tickets';
 import { useAuth } from '../../context/AuthContext';
 import { useToast } from '../../context/ToastContext';
+import { formatTicketId } from '../../utils/formatTicketId';
 import { getTicketBreadcrumbs } from '../../constants/breadcrumbs';
 import Breadcrumbs from '../../components/ui/Breadcrumbs';
 import LoadingState from '../../components/LoadingState';
@@ -122,7 +123,7 @@ export default function CustomerTicketDetail() {
             <div className="flex flex-wrap items-start justify-between gap-2 sm:gap-3">
               <div className="min-w-0 flex-1">
                 <p className="text-caption font-medium text-surface-500 dark:text-surface-400">
-                  Request #{ticket.id}
+                  Request {formatTicketId(ticket.id)}
                 </p>
                 <h1 className="mt-1 break-words text-h2 text-surface-900 dark:text-surface-100 sm:text-h1">
                   {ticket.title}
