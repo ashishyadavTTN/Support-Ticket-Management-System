@@ -1,5 +1,7 @@
+const fs = require('fs');
+const path = require('path');
 const { Op } = require('sequelize');
-const { Ticket, User, Comment } = require('../models');
+const { Ticket, User, Comment, Attachment } = require('../models');
 const HttpError = require('../utils/httpError');
 const {
   buildTicketListFilter,
@@ -10,7 +12,42 @@ const { isValidTransition } = require('../constants/statusTransitions');
 const { parseCsvParam, buildOrderClause } = require('../utils/ticketQuery');
 const { findRepresentativeWithLowestQueue } = require('../utils/ticketAssignment');
 const { ROLES } = require('../constants/roles');
+const { saveAttachments, getAttachmentFilePath } = require('../utils/attachmentStorage');
+
 const userAttributes = ['id', 'name', 'email', 'role'];
+
+const attachmentAttributes = ['id', 'originalName', 'mimeType', 'sizeBytes', 'createdAt'];
+
+const ticketInclude = [
+  { model: User, as: 'creator', attributes: userAttributes },
+  { model: User, as: 'assignee', attributes: userAttributes },
+  {
+    model: Attachment,
+    as: 'attachments',
+    attributes: attachmentAttributes,
+    where: { commentId: null },
+    required: false,
+  },
+  {
+    model: Comment,
+    as: 'comments',
+    include: [
+      { model: User, as: 'author', attributes: ['id', 'name'] },
+      {
+        model: Attachment,
+        as: 'attachments',
+        attributes: attachmentAttributes,
+      },
+    ],
+  },
+];
+
+function parseOptionalInt(value) {
+  if (value === undefined || value === null || value === '') {
+    return undefined;
+  }
+  return parseInt(value, 10);
+}
 
 async function createTicket(req, res, next) {
   try {
@@ -25,16 +62,18 @@ async function createTicket(req, res, next) {
     if (req.user.role === ROLES.CUSTOMER) {
       payload.createdBy = req.user.id;
     } else {
-      if (!req.body.createdBy) {
+      const createdBy = parseOptionalInt(req.body.createdBy);
+      if (!createdBy) {
         throw new HttpError(400, 'createdBy (customer) is required.');
       }
-      payload.createdBy = req.body.createdBy;
+      payload.createdBy = createdBy;
     }
 
     if (req.user.role === ROLES.ADMIN || req.user.role === ROLES.REPRESENTATIVE) {
-      if (req.body.assignedTo !== undefined) {
+      const assignedTo = parseOptionalInt(req.body.assignedTo);
+      if (assignedTo !== undefined) {
         if (req.user.role === ROLES.ADMIN || perms.canAssignTickets) {
-          payload.assignedTo = req.body.assignedTo;
+          payload.assignedTo = assignedTo;
         }
       }
     }
@@ -44,7 +83,18 @@ async function createTicket(req, res, next) {
     }
 
     const ticket = await Ticket.create(payload);
-    return res.status(201).json(ticket);
+
+    const files = req.files || [];
+    if (files.length) {
+      await saveAttachments(files, {
+        ticketId: ticket.id,
+        commentId: null,
+        uploadedBy: req.user.id,
+      });
+    }
+
+    const fullTicket = await Ticket.findByPk(ticket.id, { include: ticketInclude });
+    return res.status(201).json(fullTicket);
   } catch (err) {
     return next(err);
   }
@@ -122,18 +172,11 @@ async function getTickets(req, res, next) {
     return next(err);
   }
 }
+
 async function getTicketById(req, res, next) {
   try {
     const ticket = await Ticket.findByPk(req.params.id, {
-      include: [
-        { model: User, as: 'creator', attributes: userAttributes },
-        { model: User, as: 'assignee', attributes: userAttributes },
-        {
-          model: Comment,
-          as: 'comments',
-          include: [{ model: User, as: 'author', attributes: ['id', 'name'] }],
-        },
-      ],
+      include: ticketInclude,
     });
 
     assertTicketAccess(req.user, ticket);
@@ -268,14 +311,32 @@ async function createComment(req, res, next) {
 
     assertTicketAccess(req.user, ticket);
 
+    const message = (req.body.message || '').trim();
+    const files = req.files || [];
+
+    if (!message && !files.length) {
+      throw new HttpError(400, 'Message or at least one image is required.');
+    }
+
     const comment = await Comment.create({
       ticketId: ticket.id,
-      message: req.body.message,
+      message: message || '',
       createdBy: req.user.id,
     });
 
+    if (files.length) {
+      await saveAttachments(files, {
+        ticketId: ticket.id,
+        commentId: comment.id,
+        uploadedBy: req.user.id,
+      });
+    }
+
     const withAuthor = await Comment.findByPk(comment.id, {
-      include: [{ model: User, as: 'author', attributes: ['id', 'name'] }],
+      include: [
+        { model: User, as: 'author', attributes: ['id', 'name'] },
+        { model: Attachment, as: 'attachments', attributes: attachmentAttributes },
+      ],
     });
 
     return res.status(201).json(withAuthor);
@@ -292,11 +353,48 @@ async function getComments(req, res, next) {
 
     const comments = await Comment.findAll({
       where: { ticketId: ticket.id },
-      include: [{ model: User, as: 'author', attributes: ['id', 'name'] }],
+      include: [
+        { model: User, as: 'author', attributes: ['id', 'name'] },
+        { model: Attachment, as: 'attachments', attributes: attachmentAttributes },
+      ],
       order: [['createdAt', 'ASC']],
     });
 
     return res.json(comments);
+  } catch (err) {
+    return next(err);
+  }
+}
+
+async function getAttachment(req, res, next) {
+  try {
+    const ticket = await Ticket.findByPk(req.params.id);
+    assertTicketAccess(req.user, ticket);
+
+    const attachment = await Attachment.findOne({
+      where: {
+        id: req.params.attachmentId,
+        ticketId: ticket.id,
+      },
+    });
+
+    if (!attachment) {
+      throw new HttpError(404, 'Attachment not found.');
+    }
+
+    const filePath = getAttachmentFilePath(ticket.id, attachment.storedName);
+
+    if (!fs.existsSync(filePath)) {
+      throw new HttpError(404, 'Attachment file not found.');
+    }
+
+    res.setHeader('Content-Type', attachment.mimeType);
+    res.setHeader(
+      'Content-Disposition',
+      `inline; filename="${attachment.originalName.replace(/"/g, '')}"`
+    );
+
+    return res.sendFile(path.resolve(filePath));
   } catch (err) {
     return next(err);
   }
@@ -312,4 +410,5 @@ module.exports = {
   listAssignees,
   createComment,
   getComments,
+  getAttachment,
 };

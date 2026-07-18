@@ -31,3 +31,6 @@ coverage/
 
 # Sequelize
 *.sqlite
+
+# Uploaded files
+uploads/

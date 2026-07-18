@@ -5,10 +5,43 @@ const authenticate = require('../middleware/authenticate');
 const authorize = require('../middleware/authorize');
 const checkPermission = require('../middleware/checkPermission');
 const { validate } = require('../middleware/validate');
+const { optionalMultipart } = require('../middleware/upload');
+const HttpError = require('../utils/httpError');
 const { ROLES } = require('../constants/roles');
 const { PERMISSION_KEYS } = require('../constants/permissions');
 
 const router = express.Router();
+
+function validateMultipartTicketCreate(req, res, next) {
+  const title = (req.body.title || '').trim();
+  if (!title) {
+    return res.status(400).json({
+      error: 'Validation failed',
+      details: [{ type: 'field', msg: 'Title is required', path: 'title', location: 'body' }],
+    });
+  }
+
+  const priority = req.body.priority;
+  if (priority && !['low', 'medium', 'high', 'critical'].includes(priority)) {
+    return res.status(400).json({
+      error: 'Validation failed',
+      details: [{ type: 'field', msg: 'Invalid priority', path: 'priority', location: 'body' }],
+    });
+  }
+
+  return next();
+}
+
+function validateMultipartComment(req, res, next) {
+  const message = (req.body.message || '').trim();
+  const hasFiles = req.files && req.files.length > 0;
+
+  if (!message && !hasFiles) {
+    return next(new HttpError(400, 'Message or at least one image is required.'));
+  }
+
+  return next();
+}
 
 router.use(authenticate);
 
@@ -16,13 +49,20 @@ router.post(
   '/',
   authorize(ROLES.CUSTOMER, ROLES.ADMIN, ROLES.REPRESENTATIVE),
   checkPermission(PERMISSION_KEYS.CAN_CREATE_TICKETS),
-  validate([
-    body('title').trim().notEmpty().withMessage('Title is required'),
-    body('description').optional().isString(),
-    body('priority').optional().isIn(['low', 'medium', 'high', 'critical']),
-    body('assignedTo').optional().isInt(),
-    body('createdBy').optional().isInt(),
-  ]),
+  optionalMultipart('attachments'),
+  (req, res, next) => {
+    const contentType = req.headers['content-type'] || '';
+    if (contentType.includes('multipart/form-data')) {
+      return validateMultipartTicketCreate(req, res, next);
+    }
+    return validate([
+      body('title').trim().notEmpty().withMessage('Title is required'),
+      body('description').optional().isString(),
+      body('priority').optional().isIn(['low', 'medium', 'high', 'critical']),
+      body('assignedTo').optional().isInt(),
+      body('createdBy').optional().isInt(),
+    ])(req, res, next);
+  },
   ticketController.createTicket
 );
 
@@ -77,10 +117,17 @@ router.patch(
 router.post(
   '/:id/comments',
   checkPermission(PERMISSION_KEYS.CAN_COMMENT),
-  validate([
-    param('id').isInt(),
-    body('message').trim().notEmpty().withMessage('message is required'),
-  ]),
+  optionalMultipart('attachments'),
+  validate([param('id').isInt()]),
+  (req, res, next) => {
+    const contentType = req.headers['content-type'] || '';
+    if (contentType.includes('multipart/form-data')) {
+      return validateMultipartComment(req, res, next);
+    }
+    return validate([
+      body('message').trim().notEmpty().withMessage('message is required'),
+    ])(req, res, next);
+  },
   ticketController.createComment
 );
 
@@ -88,6 +135,12 @@ router.get(
   '/:id/comments',
   validate([param('id').isInt()]),
   ticketController.getComments
+);
+
+router.get(
+  '/:id/attachments/:attachmentId',
+  validate([param('id').isInt(), param('attachmentId').isInt()]),
+  ticketController.getAttachment
 );
 
 module.exports = router;

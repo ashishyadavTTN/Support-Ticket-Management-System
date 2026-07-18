@@ -7,6 +7,7 @@ import Breadcrumbs from '../../components/ui/Breadcrumbs';
 import LoadingState from '../../components/LoadingState';
 import ErrorState from '../../components/ErrorState';
 import Badge from '../../components/ui/Badge';
+import { AttachmentGallery } from '../../components/attachments/AttachmentImage';
 
 export default function InternalTicketDetail() {
   const { id } = useParams();
@@ -89,6 +90,7 @@ export default function InternalTicketDetail() {
             <dd className="mt-1 text-body text-surface-700 dark:text-surface-300">
               {ticket.description || '—'}
             </dd>
+            <AttachmentGallery ticketId={ticket.id} attachments={ticket.attachments} />
           </div>
         </dl>
       </div>
@@ -108,6 +110,7 @@ export default function InternalTicketDetail() {
                 <p className="mt-1 text-body-sm text-surface-600 dark:text-surface-400">
                   {comment.message}
                 </p>
+                <AttachmentGallery ticketId={ticket.id} attachments={comment.attachments} />
               </li>
             ))}
           </ul>

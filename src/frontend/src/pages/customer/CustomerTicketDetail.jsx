@@ -11,6 +11,8 @@ import Avatar from '../../components/ui/Avatar';
 import Badge from '../../components/ui/Badge';
 import Button from '../../components/ui/Button';
 import StatusStepper from '../../components/customer/StatusStepper';
+import ImageAttachmentPicker from '../../components/attachments/ImageAttachmentPicker';
+import { AttachmentGallery } from '../../components/attachments/AttachmentImage';
 import { formatRelativeTime } from '../../utils/formatRelativeTime';
 import { cn } from '../../utils/cn';
 
@@ -22,6 +24,7 @@ export default function CustomerTicketDetail() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [commentText, setCommentText] = useState('');
+  const [commentAttachments, setCommentAttachments] = useState([]);
   const [submittingComment, setSubmittingComment] = useState(false);
 
   useEffect(() => {
@@ -48,27 +51,33 @@ export default function CustomerTicketDetail() {
 
   const handleCommentSubmit = async (e) => {
     e.preventDefault();
-    if (!ticket || !commentText.trim()) return;
+    if (!ticket || (!commentText.trim() && !commentAttachments.length)) return;
 
     const optimisticComment = {
       id: `temp-${Date.now()}`,
       message: commentText.trim(),
       createdAt: new Date().toISOString(),
       author: { id: user.id, name: user.name },
+      attachments: [],
       _optimistic: true,
     };
+
+    const attachmentsToSend = [...commentAttachments];
 
     setTicket((prev) => ({
       ...prev,
       comments: [...(prev.comments || []), optimisticComment],
     }));
     setCommentText('');
+    setCommentAttachments([]);
     setSubmittingComment(true);
 
     try {
-      const created = await createComment(ticket.id, {
-        message: optimisticComment.message,
-      });
+      const created = await createComment(
+        ticket.id,
+        { message: optimisticComment.message },
+        attachmentsToSend
+      );
       setTicket((prev) => ({
         ...prev,
         comments: (prev.comments || [])
@@ -80,6 +89,8 @@ export default function CustomerTicketDetail() {
         ...prev,
         comments: (prev.comments || []).filter((c) => c.id !== optimisticComment.id),
       }));
+      setCommentText(optimisticComment.message);
+      setCommentAttachments(attachmentsToSend);
       toast.error(err.message || 'Failed to send message.');
     } finally {
       setSubmittingComment(false);
@@ -132,6 +143,7 @@ export default function CustomerTicketDetail() {
               <p className="mt-1.5 whitespace-pre-wrap break-words text-body-sm leading-relaxed text-surface-700 dark:text-surface-300 sm:text-body">
                 {ticket.description || 'No additional details provided.'}
               </p>
+              <AttachmentGallery ticketId={ticket.id} attachments={ticket.attachments} />
             </div>
 
             {ticket.assignee && (
@@ -210,6 +222,11 @@ export default function CustomerTicketDetail() {
                     >
                       {comment.message}
                     </p>
+                    <AttachmentGallery
+                      ticketId={ticket.id}
+                      attachments={comment.attachments}
+                      className={isOwn ? 'mt-2' : 'mt-2'}
+                    />
                   </div>
                 </li>
               );
@@ -251,13 +268,18 @@ export default function CustomerTicketDetail() {
               />
               <Button
                 type="submit"
-                disabled={!commentText.trim()}
+                disabled={!commentText.trim() && !commentAttachments.length}
                 isLoading={submittingComment}
                 className="w-full shrink-0 sm:w-auto"
               >
                 Send
               </Button>
             </div>
+            <ImageAttachmentPicker
+              files={commentAttachments}
+              onChange={setCommentAttachments}
+              disabled={submittingComment}
+            />
           </form>
         </section>
       </div>

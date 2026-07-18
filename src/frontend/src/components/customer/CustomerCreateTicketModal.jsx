@@ -8,6 +8,7 @@ import Button from '../ui/Button';
 import Input from '../ui/Input';
 import Select from '../ui/Select';
 import Textarea from '../ui/Textarea';
+import ImageAttachmentPicker from '../attachments/ImageAttachmentPicker';
 
 export default function CustomerCreateTicketModal({ isOpen, onClose, onCreated }) {
   const toast = useToast();
@@ -19,11 +20,13 @@ export default function CustomerCreateTicketModal({ isOpen, onClose, onCreated }
   const [errors, setErrors] = useState({});
   const [formError, setFormError] = useState('');
   const [isLoading, setIsLoading] = useState(false);
+  const [attachments, setAttachments] = useState([]);
 
   const resetForm = () => {
     setForm({ title: '', description: '', priority: 'medium' });
     setErrors({});
     setFormError('');
+    setAttachments([]);
   };
 
   const handleClose = () => {
@@ -52,11 +55,14 @@ export default function CustomerCreateTicketModal({ isOpen, onClose, onCreated }
 
     setIsLoading(true);
     try {
-      const ticket = await createTicket({
-        title: form.title.trim(),
-        description: form.description.trim(),
-        priority: form.priority,
-      });
+      const ticket = await createTicket(
+        {
+          title: form.title.trim(),
+          description: form.description.trim(),
+          priority: form.priority,
+        },
+        attachments
+      );
       toast.success('Your request has been submitted!');
       onCreated?.(ticket);
       handleClose();
@@ -130,6 +136,15 @@ export default function CustomerCreateTicketModal({ isOpen, onClose, onCreated }
           <option value="high">High — blocking my work</option>
           <option value="critical">Critical — urgent issue</option>
         </Select>
+
+        <div>
+          <p className="mb-1.5 text-label text-surface-700 dark:text-surface-300">Screenshots (optional)</p>
+          <ImageAttachmentPicker
+            files={attachments}
+            onChange={setAttachments}
+            disabled={isLoading}
+          />
+        </div>
       </form>
     </Modal>
   );

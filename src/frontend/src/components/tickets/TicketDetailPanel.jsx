@@ -20,6 +20,8 @@ import Button from '../ui/Button';
 import Select from '../ui/Select';
 import SlidePanel from '../ui/SlidePanel';
 import SkeletonList from '../ui/Skeleton';
+import ImageAttachmentPicker from '../attachments/ImageAttachmentPicker';
+import { AttachmentGallery } from '../attachments/AttachmentImage';
 
 export default function TicketDetailPanel({
   ticketId,
@@ -33,6 +35,7 @@ export default function TicketDetailPanel({
   const [ticket, setTicket] = useState(null);
   const [loading, setLoading] = useState(false);
   const [commentText, setCommentText] = useState('');
+  const [commentAttachments, setCommentAttachments] = useState([]);
   const [submittingComment, setSubmittingComment] = useState(false);
   const [updatingStatus, setUpdatingStatus] = useState(false);
   const [updatingAssignee, setUpdatingAssignee] = useState(false);
@@ -111,25 +114,33 @@ export default function TicketDetailPanel({
 
   const handleCommentSubmit = async (e) => {
     e.preventDefault();
-    if (!ticket || !commentText.trim()) return;
+    if (!ticket || (!commentText.trim() && !commentAttachments.length)) return;
 
     const optimisticComment = {
       id: `temp-${Date.now()}`,
       message: commentText.trim(),
       createdAt: new Date().toISOString(),
       author: { id: user.id, name: user.name },
+      attachments: [],
       _optimistic: true,
     };
+
+    const attachmentsToSend = [...commentAttachments];
 
     setTicket((prev) => ({
       ...prev,
       comments: [...(prev.comments || []), optimisticComment],
     }));
     setCommentText('');
+    setCommentAttachments([]);
     setSubmittingComment(true);
 
     try {
-      const created = await createComment(ticket.id, { message: optimisticComment.message });
+      const created = await createComment(
+        ticket.id,
+        { message: optimisticComment.message },
+        attachmentsToSend
+      );
       setTicket((prev) => ({
         ...prev,
         comments: (prev.comments || [])
@@ -141,6 +152,8 @@ export default function TicketDetailPanel({
         ...prev,
         comments: (prev.comments || []).filter((c) => c.id !== optimisticComment.id),
       }));
+      setCommentText(optimisticComment.message);
+      setCommentAttachments(attachmentsToSend);
       toast.error(err.message || 'Failed to post comment.');
     } finally {
       setSubmittingComment(false);
@@ -168,6 +181,7 @@ export default function TicketDetailPanel({
             <p className="mt-1.5 text-body-sm leading-relaxed text-surface-700 dark:text-surface-300">
               {ticket.description || 'No description provided.'}
             </p>
+            <AttachmentGallery ticketId={ticket.id} attachments={ticket.attachments} />
           </div>
 
           <div className="grid gap-4 sm:grid-cols-2">
@@ -263,6 +277,7 @@ export default function TicketDetailPanel({
                     </div>
                   </div>
                   <p className="mt-2 text-body-sm text-surface-700 dark:text-surface-300">{comment.message}</p>
+                  <AttachmentGallery ticketId={ticket.id} attachments={comment.attachments} />
                 </li>
               ))}
               {!ticket.comments?.length && (
@@ -279,11 +294,16 @@ export default function TicketDetailPanel({
                   rows={3}
                   className="block w-full resize-y rounded-lg border border-surface-300 px-3 py-2 text-body-sm shadow-xs transition-colors placeholder:text-surface-400 focus:border-brand-500 focus:outline-none focus:ring-2 focus:ring-brand-500/20 dark:border-surface-600 dark:bg-surface-900 dark:text-surface-100 dark:placeholder:text-surface-500"
                 />
+                <ImageAttachmentPicker
+                  files={commentAttachments}
+                  onChange={setCommentAttachments}
+                  disabled={submittingComment}
+                />
                 <div className="flex justify-end">
                   <Button
                     type="submit"
                     size="sm"
-                    disabled={!commentText.trim()}
+                    disabled={!commentText.trim() && !commentAttachments.length}
                     isLoading={submittingComment}
                   >
                     Post comment

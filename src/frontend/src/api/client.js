@@ -163,3 +163,105 @@ export async function apiFetch(path, options = {}) {
     trackRequestEnd();
   }
 }
+
+/**
+ * Multipart fetch — does not set Content-Type so the browser adds the boundary.
+ */
+export async function apiFetchMultipart(path, options = {}) {
+  trackRequestStart();
+  try {
+    const token = accessTokenGetter();
+    const headers = { ...options.headers };
+
+    if (token) {
+      headers.Authorization = `Bearer ${token}`;
+    }
+
+    const doFetch = () =>
+      fetch(`${API_BASE}${path}`, {
+        ...options,
+        headers,
+        credentials: 'include',
+        signal: options.signal,
+      });
+
+    let response = await doFetch();
+
+    if (response.ok) {
+      return parseResponseBody(response);
+    }
+
+    if (response.status !== 401 || !shouldAttemptRefresh(path, options)) {
+      const body = await parseResponseBody(response);
+      await throwApiError(response, body);
+    }
+
+    try {
+      await attemptTokenRefresh();
+    } catch {
+      await handleSessionExpired();
+      const body = await parseResponseBody(response);
+      await throwApiError(response, body);
+    }
+
+    response = await doFetch();
+
+    if (!response.ok) {
+      if (response.status === 401) {
+        await handleSessionExpired();
+      }
+      const body = await parseResponseBody(response);
+      await throwApiError(response, body);
+    }
+
+    return parseResponseBody(response);
+  } finally {
+    trackRequestEnd();
+  }
+}
+
+/**
+ * Fetch a binary resource (e.g. attachment image) with auth.
+ */
+export async function apiFetchBlob(path, options = {}) {
+  trackRequestStart();
+  try {
+    const token = accessTokenGetter();
+    const headers = { ...options.headers };
+
+    if (token) {
+      headers.Authorization = `Bearer ${token}`;
+    }
+
+    const doFetch = () =>
+      fetch(`${API_BASE}${path}`, {
+        ...options,
+        headers,
+        credentials: 'include',
+        signal: options.signal,
+      });
+
+    let response = await doFetch();
+
+    if (response.status === 401 && shouldAttemptRefresh(path, options)) {
+      try {
+        await attemptTokenRefresh();
+        response = await doFetch();
+      } catch {
+        await handleSessionExpired();
+      }
+    }
+
+    if (!response.ok) {
+      if (response.status === 401) {
+        await handleSessionExpired();
+      }
+      const body = await parseResponseBody(response);
+      await throwApiError(response, body);
+    }
+
+    return response.blob();
+  } finally {
+    trackRequestEnd();
+  }
+}

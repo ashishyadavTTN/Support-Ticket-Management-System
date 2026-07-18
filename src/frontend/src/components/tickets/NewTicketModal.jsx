@@ -10,6 +10,7 @@ import Button from '../ui/Button';
 import Input from '../ui/Input';
 import Select from '../ui/Select';
 import Textarea from '../ui/Textarea';
+import ImageAttachmentPicker from '../attachments/ImageAttachmentPicker';
 
 export default function NewTicketModal({ isOpen, onClose, onCreated }) {
   const { user } = useAuth();
@@ -32,6 +33,7 @@ export default function NewTicketModal({ isOpen, onClose, onCreated }) {
   const [isLoading, setIsLoading] = useState(false);
   const [customers, setCustomers] = useState([]);
   const [representatives, setRepresentatives] = useState([]);
+  const [attachments, setAttachments] = useState([]);
 
   useEffect(() => {
     if (!isOpen) return;
@@ -45,6 +47,7 @@ export default function NewTicketModal({ isOpen, onClose, onCreated }) {
     });
     setErrors({});
     setFormError('');
+    setAttachments([]);
 
     async function loadOptions() {
       try {
@@ -100,7 +103,7 @@ export default function NewTicketModal({ isOpen, onClose, onCreated }) {
         payload.assignedTo = parseInt(form.assignedTo, 10);
       }
 
-      const ticket = await createTicket(payload);
+      const ticket = await createTicket(payload, attachments);
       toast.success('Ticket created successfully');
       onCreated?.(ticket);
       onClose();
@@ -205,6 +208,15 @@ export default function NewTicketModal({ isOpen, onClose, onCreated }) {
             ))}
           </Select>
         )}
+
+        <div>
+          <p className="mb-1.5 text-label text-surface-700 dark:text-surface-300">Images (optional)</p>
+          <ImageAttachmentPicker
+            files={attachments}
+            onChange={setAttachments}
+            disabled={isLoading}
+          />
+        </div>
       </form>
     </Modal>
   );
