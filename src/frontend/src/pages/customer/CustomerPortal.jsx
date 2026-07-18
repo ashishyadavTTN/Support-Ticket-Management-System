@@ -7,6 +7,7 @@ import Button from '../../components/ui/Button';
 import EmptyState from '../../components/ui/EmptyState';
 import SkeletonList, { Skeleton } from '../../components/ui/Skeleton';
 import ErrorState from '../../components/ErrorState';
+import StatusFilterDropdown, { ALL_VALUE } from '../../components/ui/StatusFilterDropdown';
 import CustomerTicketCard from '../../components/customer/CustomerTicketCard';
 import CustomerCreateTicketModal from '../../components/customer/CustomerCreateTicketModal';
 import { cn } from '../../utils/cn';
@@ -16,27 +17,48 @@ const STATUS_GROUPS = [
     key: 'open',
     label: 'Open',
     color: 'text-status-open dark:text-sky-300',
-    bg: 'bg-status-open-bg dark:bg-sky-950 dark:border-sky-900',
+    bg: 'bg-status-open-bg dark:bg-sky-950',
+    border: 'border-sky-200/80 dark:border-sky-900',
   },
   {
     key: 'in_progress',
     label: 'In Progress',
     color: 'text-status-in-progress dark:text-amber-300',
-    bg: 'bg-status-in-progress-bg dark:bg-amber-950 dark:border-amber-900',
+    bg: 'bg-status-in-progress-bg dark:bg-amber-950',
+    border: 'border-amber-200/80 dark:border-amber-900',
   },
   {
     key: 'resolved',
     label: 'Resolved',
     color: 'text-status-resolved dark:text-emerald-300',
-    bg: 'bg-status-resolved-bg dark:bg-emerald-950 dark:border-emerald-900',
+    bg: 'bg-status-resolved-bg dark:bg-emerald-950',
+    border: 'border-emerald-200/80 dark:border-emerald-900',
   },
   {
     key: 'closed',
     label: 'Closed',
     color: 'text-status-closed dark:text-stone-300',
-    bg: 'bg-status-closed-bg dark:bg-stone-900 dark:border-stone-700',
+    bg: 'bg-status-closed-bg dark:bg-stone-900',
+    border: 'border-stone-200/80 dark:border-stone-700',
   },
 ];
+
+const STATUS_FILTER_OPTIONS = [
+  { value: ALL_VALUE, label: 'All' },
+  { value: 'open', label: 'Open' },
+  { value: 'in_progress', label: 'In Progress' },
+  { value: 'resolved', label: 'Resolved' },
+  { value: 'closed', label: 'Closed' },
+];
+
+const DEFAULT_STATUS_FILTER = ['open'];
+
+function buildStatusQuery(statusFilter) {
+  if (statusFilter.includes(ALL_VALUE)) {
+    return undefined;
+  }
+  return statusFilter.length > 0 ? statusFilter : undefined;
+}
 
 export default function CustomerPortal() {
   const { user } = useAuth();
@@ -47,17 +69,20 @@ export default function CustomerPortal() {
   const [loading, setLoading] = useState(true);
   const [statsLoading, setStatsLoading] = useState(true);
   const [error, setError] = useState(null);
+  const [statusFilter, setStatusFilter] = useState(DEFAULT_STATUS_FILTER);
   const [showCreateModal, setShowCreateModal] = useState(
     searchParams.get('create') === 'true'
   );
 
   const firstName = user?.name?.split(' ')[0] || 'there';
+  const isFiltering = !statusFilter.includes(ALL_VALUE);
 
   const fetchTickets = useCallback(async () => {
     setLoading(true);
     setError(null);
     try {
       const data = await getTickets({
+        status: buildStatusQuery(statusFilter),
         sortBy: 'createdAt',
         sortOrder: 'desc',
         limit: 100,
@@ -68,7 +93,7 @@ export default function CustomerPortal() {
     } finally {
       setLoading(false);
     }
-  }, []);
+  }, [statusFilter]);
 
   const fetchStats = useCallback(async () => {
     setStatsLoading(true);
@@ -84,8 +109,11 @@ export default function CustomerPortal() {
 
   useEffect(() => {
     fetchTickets();
+  }, [fetchTickets]);
+
+  useEffect(() => {
     fetchStats();
-  }, [fetchTickets, fetchStats]);
+  }, [fetchStats]);
 
   useEffect(() => {
     if (searchParams.get('create') === 'true') {
@@ -100,88 +128,126 @@ export default function CustomerPortal() {
     navigate(`/tickets/${ticket.id}`);
   };
 
+  const handleStatusFilterChange = (nextFilter) => {
+    setStatusFilter(nextFilter);
+  };
+
+  const handleStatusCardClick = (statusKey) => {
+    setStatusFilter([statusKey]);
+  };
+
+  const emptyTitle = isFiltering ? 'No matching requests' : 'No requests yet';
+  const emptyDescription = isFiltering
+    ? 'Try selecting a different status or view all requests.'
+    : "Need help? Submit a support request and we'll take care of it.";
+
   return (
-    <div className="relative pb-24 md:pb-6">
+    <div className="relative mx-auto max-w-5xl pb-24 md:pb-8">
       <div className="mb-8">
         <h1 className="text-display text-surface-900 dark:text-surface-100">Hi, {firstName}</h1>
-        <p className="mt-2 text-body text-surface-600 dark:text-surface-400">
+        <p className="mt-1.5 text-body text-surface-600 dark:text-surface-400">
           Here&apos;s an overview of your support requests
         </p>
       </div>
 
       {error && <ErrorState message={error} onRetry={fetchTickets} />}
 
-      {loading && statsLoading ? (
-        <SkeletonList count={4} />
-      ) : (
-        <>
-          <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
-            {STATUS_GROUPS.map((group) => (
-              <div
+      <section aria-label="Ticket status summary">
+        <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
+          {STATUS_GROUPS.map((group) => {
+            const isActive = statusFilter.length === 1 && statusFilter[0] === group.key;
+
+            return (
+              <button
                 key={group.key}
+                type="button"
+                onClick={() => handleStatusCardClick(group.key)}
                 className={cn(
-                  'rounded-2xl border border-surface-200 p-4 text-center shadow-xs dark:border-surface-700',
-                  group.bg
+                  'rounded-xl border p-4 text-left transition-all duration-150',
+                  group.bg,
+                  group.border,
+                  isActive
+                    ? 'ring-2 ring-brand-500/40 shadow-sm'
+                    : 'hover:shadow-sm active:scale-[0.98]'
                 )}
+                aria-pressed={isActive}
               >
                 {statsLoading ? (
-                  <Skeleton className="mx-auto h-9 w-10" />
+                  <Skeleton className="h-8 w-10" />
                 ) : (
-                  <p className={cn('text-display font-bold', group.color)}>
+                  <p className={cn('text-3xl font-bold tracking-tight', group.color)}>
                     {statusCounts?.[group.key] ?? 0}
                   </p>
                 )}
                 <p className="mt-1 text-caption font-medium text-surface-600 dark:text-surface-400">
                   {group.label}
                 </p>
-              </div>
-            ))}
+              </button>
+            );
+          })}
+        </div>
+
+        {!statsLoading && statusCounts?.cancelled > 0 && (
+          <p className="mt-3 text-caption text-surface-500 dark:text-surface-400">
+            {statusCounts.cancelled} cancelled request
+            {statusCounts.cancelled !== 1 ? 's' : ''}
+          </p>
+        )}
+      </section>
+
+      <section className="mt-10" aria-label="Your requests">
+        <div className="flex flex-col gap-4 border-b border-surface-200 pb-4 dark:border-surface-700 sm:flex-row sm:items-center sm:justify-between">
+          <div>
+            <h2 className="text-h2 text-surface-900 dark:text-surface-100">Your requests</h2>
+            {!loading && (
+              <p className="mt-0.5 text-body-sm text-surface-500 dark:text-surface-400">
+                {tickets.length} request{tickets.length !== 1 ? 's' : ''}
+                {isFiltering ? ' matching your filter' : ''}
+              </p>
+            )}
           </div>
 
-          {!statsLoading && statusCounts?.cancelled > 0 && (
-            <p className="mt-3 text-center text-caption text-surface-500 dark:text-surface-400">
-              {statusCounts.cancelled} cancelled request
-              {statusCounts.cancelled !== 1 ? 's' : ''}
-            </p>
-          )}
-
-          <div className="mt-8 flex items-center justify-between">
-            <h2 className="text-h2 text-surface-900 dark:text-surface-100">Your requests</h2>
+          <div className="flex items-center gap-2.5">
+            <StatusFilterDropdown
+              options={STATUS_FILTER_OPTIONS}
+              selected={statusFilter}
+              onChange={handleStatusFilterChange}
+            />
             <Button
-              className="hidden md:inline-flex"
+              className="hidden shrink-0 md:inline-flex"
               onClick={() => setShowCreateModal(true)}
             >
               New request
             </Button>
           </div>
+        </div>
 
-          {loading ? (
-            <div className="mt-4">
-              <SkeletonList count={3} />
-            </div>
-          ) : tickets.length === 0 ? (
-            <div className="mt-4">
-              <EmptyState
-                icon={
-                  <svg className="h-7 w-7" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
-                    <path strokeLinecap="round" strokeLinejoin="round" d="M8.228 9c.549-1.165 2.03-2 3.772-2 2.21 0 4 1.343 4 3 0 1.4-1.278 2.575-3.006 2.907-.542.104-.994.54-.994 1.093m0 3h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-                  </svg>
-                }
-                title="No requests yet"
-                description="Need help? Submit a support request and we'll take care of it."
-                actionLabel="Get help"
-                onAction={() => setShowCreateModal(true)}
-              />
-            </div>
-          ) : (
-            <div className="mt-4 grid gap-3 sm:grid-cols-2">
-              {tickets.map((ticket) => (
-                <CustomerTicketCard key={ticket.id} ticket={ticket} />
-              ))}
-            </div>
-          )}
-        </>
-      )}
+        {loading ? (
+          <div className="mt-6">
+            <SkeletonList count={3} />
+          </div>
+        ) : tickets.length === 0 ? (
+          <div className="mt-6">
+            <EmptyState
+              icon={
+                <svg className="h-7 w-7" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M8.228 9c.549-1.165 2.03-2 3.772-2 2.21 0 4 1.343 4 3 0 1.4-1.278 2.575-3.006 2.907-.542.104-.994.54-.994 1.093m0 3h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                </svg>
+              }
+              title={emptyTitle}
+              description={emptyDescription}
+              actionLabel={isFiltering ? 'Show all requests' : 'Get help'}
+              onAction={() => (isFiltering ? setStatusFilter([ALL_VALUE]) : setShowCreateModal(true))}
+            />
+          </div>
+        ) : (
+          <div className="mt-6 grid gap-4 sm:grid-cols-2">
+            {tickets.map((ticket) => (
+              <CustomerTicketCard key={ticket.id} ticket={ticket} />
+            ))}
+          </div>
+        )}
+      </section>
 
       <button
         type="button"
