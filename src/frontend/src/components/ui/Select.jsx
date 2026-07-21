@@ -1,8 +1,10 @@
+import { useId } from 'react';
 import { cn } from '../../utils/cn';
 import { FieldWrapper } from './Input';
 
 const selectClasses =
   'block w-full appearance-none rounded border border-surface-300 bg-white px-3 py-2 pr-10 text-body text-surface-900 shadow-xs transition-colors hover:border-surface-400 focus:border-brand-500 focus:outline-none focus:ring-2 focus:ring-brand-500/20 disabled:cursor-not-allowed disabled:bg-surface-100 dark:border-surface-600 dark:bg-surface-900 dark:text-surface-100 dark:hover:border-surface-500 dark:disabled:bg-surface-800';
+
 export default function Select({
   label,
   id,
@@ -13,7 +15,9 @@ export default function Select({
   children,
   ...props
 }) {
-  const selectId = id || props.name;
+  const generatedId = useId();
+  // Prefer explicit id/name; fall back so label htmlFor always binds (AI scaffolds often omit both).
+  const selectId = id || props.name || generatedId;
 
   return (
     <FieldWrapper
