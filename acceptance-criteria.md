@@ -1,18 +1,20 @@
 # Acceptance Criteria
 
-> **Note:** Checkboxes marked `[x]` reflect what is **implemented in code today**. Unchecked items are either not started, placeholder assessment sections, or still need your judgment. Scope additions beyond the original Core are listed separately.
+> **Note:** Checkboxes marked `[x]` reflect what is **implemented in code today**. Unchecked items are either not started or intentionally deferred.
 
 ## Core (original exercise)
 
-- [x] Users can create tickets (customer self-service and admin on behalf of customer)
+- [x] Users can create tickets (customer self-service and admin/rep on behalf of customer)
 - [x] Users can list tickets (role-scoped on the server)
 - [x] Users can view a single ticket with comments
-- [x] Representatives/admins can update ticket fields (title, description, priority, assignee)
+- [x] Representatives/admins can update ticket fields (title, description, priority) and reassign via UI + API
 - [x] Representatives/admins can change ticket status via state machine (`PATCH /tickets/:id/status`)
 - [x] Users with `canComment` can add comments on accessible tickets
 - [x] Invalid status transitions are rejected with `400`
-- [x] Sequelize models and migrations for User, Ticket, Comment
+- [x] Keyword search and status filter work in admin/rep list **and** customer portal
+- [x] Sequelize models and migrations for User, Ticket, Comment, Attachment
 - [x] Demo seed data for development/testing
+- [x] State-machine integration tests (valid + invalid paths)
 
 ## Validation
 
@@ -31,19 +33,16 @@
 ## Testing
 
 - [x] Jest + Supertest test harness configured
-- [x] Unit tests for the status state machine (`tests/unit/statusTransitions.test.js`, DB-free)
+- [x] Unit tests for the status state machine and `formatTicketId`
 - [x] Health check integration test passes
 - [x] Status-transition integration tests (valid paths, invalid paths, terminal states, `resolved → open`, customer 403)
-- [x] Auth endpoint integration tests (`tests/auth.integration.js`)
-- [x] RBAC / permission integration tests (`tests/ticket-rbac.integration.js`)
-- [x] Ticket CRUD, search, and status filter integration tests
-- [x] Admin and dashboard integration tests
-- [ ] Frontend automated tests (none configured — manual UI testing only)
+- [x] Auth, RBAC, CRUD, attachments, admin, dashboard, and assignment integration suites
+- [x] Frontend automated tests (Vitest + React Testing Library — login, filters, validation helpers)
 
 ## Documentation
 
-- [x] `api-contract.md` documents implemented HTTP endpoints
-- [x] `data-model.md` reflects current schema
+- [x] `api-contract.md` documents implemented HTTP endpoints (including attachments)
+- [x] `data-model.md` reflects current schema (UUID tickets + Attachments)
 - [x] `ui-flow.md` describes current navigation
 - [x] `tool-workflow.md`, `debugging-notes.md`, `test-results.md` completed
 - [x] `candidate-info.md`, `reflection.md`, `pr-description.md`, and review docs completed
@@ -51,8 +50,6 @@
 ---
 
 ## Scope additions (beyond original Core)
-
-These acceptance criteria emerged as the project grew; they were **not** in the original scaffold:
 
 ### Authentication & RBAC
 
@@ -64,20 +61,19 @@ These acceptance criteria emerged as the project grew; they were **not** in the 
 
 ### UI / UX (role-specific)
 
-- [x] Admin/rep ticket table with filters, pagination, slide panel
-- [x] Customer portal with status cards, ticket grid, detail stepper
+- [x] Admin/rep ticket table with filters, pagination, slide panel (editable fields + reassign)
+- [x] Customer portal with status cards, keyword search, status filter, ticket grid, detail stepper
 - [x] Representatives management page (admin)
 - [x] Dashboard stats (admin, rep, customer)
 - [x] Settings page (profile, password, theme)
+- [x] Image attachments on ticket create and comments
 - [x] Global loading bar, debounced search, dark mode, breadcrumbs
 
 ### Dashboard / analytics
 
 - [x] `resolvedAt` timestamp set on transition to `resolved`
-- [x] Admin dashboard: open tickets, active users by role, avg resolution (30d)
-- [x] Rep dashboard: assigned open count, avg resolution (30d, scoped)
-- [x] Customer dashboard: ticket counts by status (scoped)
+- [x] Admin / rep / customer dashboard metrics
 
 ## Overall Judgment
 
-All mandatory Core criteria pass in code today (create/list/detail/update, comments, enforced state machine with invalid transitions rejected, keyword search + status filter, MSSQL persistence, backend validation, no secrets committed, state-machine integration tests). The only unchecked item is **frontend automated tests**, which are intentionally out of scope for this exercise (backend integration tests cover the API contracts). Customer-facing search/filter UI is deferred with rationale (admin/rep list demonstrates the feature; the API supports both).
+Mandatory Core criteria are implemented in code (create/list/detail/update fields + reassign, comments, enforced state machine, keyword search + status filter on admin/rep **and** customer UIs, MSSQL persistence, backend validation, no secrets committed, state-machine integration tests). Stretch additions include auth/RBAC, attachments, UUID ticket IDs, dashboards, and frontend component/unit tests via Vitest.

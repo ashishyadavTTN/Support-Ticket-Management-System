@@ -14,6 +14,13 @@ function spaHtmlBypass(req) {
 
 export default defineConfig({
   plugins: [react()],
+  test: {
+    environment: 'jsdom',
+    globals: true,
+    setupFiles: './src/test/setup.js',
+    css: false,
+    include: ['src/**/*.{test,spec}.{js,jsx}'],
+  },
   server: {
     port: 5173,
     proxy: {

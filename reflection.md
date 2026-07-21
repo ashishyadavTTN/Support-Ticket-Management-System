@@ -4,10 +4,10 @@
 
 A production-style support ticket system beyond the original Core scaffold:
 
-- **Core:** Ticket create/list/detail/update, comments, status state machine, keyword search + status filter (admin/rep UI), MSSQL persistence, backend validation, meaningful UI error states
-- **Stretch:** JWT auth with refresh cookies, RBAC with granular rep permissions, admin rep management, role-specific dashboards and UIs, pagination/sorting/multi-filter, `resolvedAt` analytics, auto-assignment to lowest-queue rep
+- **Core:** Ticket create/list/detail/update fields + reassign, comments, status state machine, keyword search + status filter (admin/rep and customer UIs), MSSQL persistence, backend validation, meaningful UI error states
+- **Stretch:** JWT auth with refresh cookies, RBAC with granular rep permissions, admin rep management, role-specific dashboards and UIs, pagination/sorting/multi-filter, image attachments, UUID ticket IDs, `resolvedAt` analytics, auto-assignment to lowest-queue rep
 
-56 backend integration tests verify auth, RBAC, CRUD, the full state machine (including terminal states), and assignment rules.
+85 backend tests (11 suites: integration + unit) verify auth, RBAC, CRUD, attachments, the full state machine (including terminal states), and assignment rules.
 
 ## How I Used AI
 
@@ -22,14 +22,14 @@ I used AI heavily for scaffolding and boilerplate but manually verified security
 1. **Layered delivery** — data model → auth → API → UI prevented rework
 2. **Persistent project context** — `project-context.md` reduced repeated explanations across sessions
 3. **Debugging notes** — documenting Vite proxy vs SPA overlap saved time on similar issues
-4. **Integration tests over unit tests** — faster confidence for an exercise deadline with clear API contracts
+4. **Integration tests over broad unit tests** — faster confidence for an exercise deadline with clear API contracts
 
 ## What I Would Do Differently
 
-1. **Sync docs with code continuously** — `acceptance-criteria.md` and `test-strategy.md` went stale while tests were implemented; a final audit caught this
+1. **Sync docs with code continuously** — several markdown files lagged behind attachments/UUID work until a pre-submission audit
 2. **Smaller commits** — one large initial commit makes it hard to show iteration; I'd commit per milestone (auth, RBAC, tests)
 3. **Earlier test implementation** — placeholders were fine initially, but filling them sooner would have caught the MSSQL JSON string permissions bug earlier
-4. **Frontend tests** — at least a few component tests for `TicketFilterBar` and login forms would strengthen the submission
+4. **Frontend tests** — Vitest covers login + filter bar; I'd still add a few more component tests and optionally Playwright for one happy-path role flow
 
 ## Skills Demonstrated
 
@@ -45,5 +45,6 @@ I used AI heavily for scaffolding and boilerplate but manually verified security
 |----------|--------|-------------|-----|
 | Permissions storage | JSON on User | Join table | Simpler for fixed boolean flags; fewer joins |
 | Resolution timing | `resolvedAt` column | Status history table | Enough for 30-day avg; less migration complexity |
-| Customer search/filter | API only | UI on portal | Time; admin/rep list demonstrates feature |
-| Test tier | Integration only | Unit + E2E | Best ROI for exercise scope |
+| Customer search/filter | Portal keyword search + status filter | Admin/rep only | Core UX for customers; API already supported both |
+| Test tier | Backend integration + targeted unit + frontend Vitest | Full E2E | Best ROI for exercise scope |
+| Ticket IDs | UUID | Sequential integers | Safer public identifiers; display shortened in UI |

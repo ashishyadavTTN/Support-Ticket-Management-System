@@ -194,25 +194,29 @@ All authenticated endpoints require `Authorization: Bearer <accessToken>` unless
 
 ## POST /tickets
 
-**Auth:** Customer or Admin  
-**Permission:** `canCreateTickets`
-**Request:**
+**Auth:** Customer, Admin, or Representative (with `canCreateTickets`)  
+**Permission:** `canCreateTickets`  
+**Content-Type:** `application/json` **or** `multipart/form-data` (when attaching images)
+
+**JSON request:**
 
 ```json
 {
   "title": "string (required)",
   "description": "string (optional)",
   "priority": "low|medium|high|critical (optional, default medium)",
-  "createdBy": "integer (admin only — customer user id)",
-  "assignedTo": "integer (admin, or rep with canAssignTickets via update — optional on create for admin)"
+  "createdBy": "integer (admin/rep creating on behalf of a customer)",
+  "assignedTo": "integer (admin, or rep with canAssignTickets — optional)"
 }
 ```
 
-**Notes:**
-- **Customer:** `createdBy` set from JWT automatically; `assignedTo` ignored if sent.
-- **Admin:** may pass `createdBy` (customer id) and `assignedTo` (representative id).
+**Multipart fields:** same as JSON (`title`, `description`, `priority`, …) plus up to **3** image files under field name `attachments` (`jpeg`/`png`/`gif`/`webp`, max 5 MB each).
 
-**Response:** `201` — created ticket object (flat Sequelize JSON; may not include nested `creator`/`assignee` until refetched).  
+**Notes:**
+- **Customer:** `createdBy` set from JWT; new tickets auto-assign to the representative with the lowest open/in-progress queue when `assignedTo` is omitted.
+- **Admin / privileged rep:** may pass `createdBy` (customer id) and `assignedTo`.
+
+**Response:** `201` — created ticket including nested `creator`/`assignee`/`attachments`/`comments`.  
 **Error Responses:** `400` validation; `403` permission/role.
 
 ---
@@ -265,8 +269,8 @@ All authenticated endpoints require `Authorization: Bearer <accessToken>` unless
 
 **Auth:** Required  
 **Access:** `assertTicketAccess` — Customer gets 403 on other customers' tickets.  
-**Response:** `200` — ticket with nested `comments` and `creator`/`assignee`.  
-**Notes:** Inactive assignees still appear on historical tickets.
+**Response:** `200` — ticket with nested `comments` (each with `author` + `attachments`), ticket-level `attachments`, and `creator`/`assignee`.  
+**Notes:** Inactive assignees still appear on historical tickets. Ticket `id` is a UUID.
 
 ---
 
@@ -300,16 +304,29 @@ All authenticated endpoints require `Authorization: Bearer <accessToken>` unless
 
 **Auth:** Required  
 **Permission:** `canComment`  
-**Request:** `{ "message": string }`  
+**Content-Type:** `application/json` **or** `multipart/form-data`
+
+**JSON:** `{ "message": string }`  
+**Multipart:** `message` (optional if files present) + up to **3** `attachments` image files. At least one of message or images is required.
+
 **Notes:** User must have ticket access. Customer can comment on own tickets only (enforced by access check).  
-**Response:** `201` — comment with `author`.
+**Response:** `201` — comment with `author` and `attachments`.
 
 ---
 
 ## GET /tickets/:id/comments
 
 **Auth:** Required (same access as ticket)  
-**Response:** `200` — array of comments.
+**Response:** `200` — array of comments (with authors/attachments as configured).
+
+---
+
+## GET /tickets/:id/attachments/:attachmentId
+
+**Auth:** Required (same ticket access as `GET /tickets/:id`)  
+**Purpose:** Stream a stored image file for gallery display.  
+**Response:** `200` — image bytes with the stored `Content-Type`  
+**Error Responses:** `404` if ticket/attachment missing or file not on disk; `403` without ticket access.
 
 ---
 
@@ -324,7 +341,7 @@ All authenticated endpoints require `Authorization: Bearer <accessToken>` unless
 
 The customer portal relies on backend enforcement, not UI hiding:
 
-1. `GET /tickets` returns only the authenticated customer's tickets.
+1. `GET /tickets` returns only the authenticated customer's tickets (supports `search` + `status` filters used by the portal).
 2. `GET /tickets/:id` returns 403 for tickets not created by the customer.
 3. `PATCH /tickets/:id/status` and `PUT /tickets/:id` are role-gated to Admin/Representative.
 4. `/admin/*` routes require Admin role.
@@ -337,8 +354,8 @@ The customer portal relies on backend enforcement, not UI hiding:
 | Status | Example `error` message |
 |--------|-------------------------|
 | `401` | `Authentication required. Provide a valid Bearer token.` |
-| `403` | `You do not have permission to access this ticket` |
-| `403` | `Customers cannot change ticket status.` |
-| `400` | `Cannot transition from "open" to "closed".` |
+| `403` | `You do not have permission to access this ticket` / `Customers cannot change ticket status.` |
+| `404` | `Ticket not found.` |
+| `400` | `Cannot transition from "open" to "closed".` / `Validation failed` |
 
 Password hashes are never included in any response.

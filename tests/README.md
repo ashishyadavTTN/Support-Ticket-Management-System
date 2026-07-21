@@ -29,10 +29,12 @@ npm test
 | `ticket-crud.integration.js` | Create, list, search, status filter, detail, update, comments |
 | `ticket-rbac.integration.js` | Role scoping, access boundaries, admin route protection |
 | `ticket-assignment.integration.js` | Auto-assign, rep `canCreateTickets`, customer list gating |
+| `ticket-attachments.integration.js` | Image upload on create/comment, fetch, validation |
 | `admin.integration.js` | Representatives, customers, permissions, deactivation |
 | `dashboard.integration.js` | Admin and role-scoped dashboard stats |
+| `unit/formatTicketId.test.js` | Short UUID display formatting — no DB required |
 
-**Total:** 8 integration suites plus 1 unit suite. See `test-results.md` for the latest recorded counts (re-run `npm test` after adding tests).
+**Total:** 9 integration suites + 2 unit suites (**85 tests**). See `test-results.md` for the latest recorded run.
 
 ## Seeded test users
 

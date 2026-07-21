@@ -11,6 +11,8 @@
     "start:backend": "npm start --prefix src/backend",
     "build:frontend": "npm run build --prefix src/frontend",
     "test": "npm test --prefix src/backend",
+    "test:frontend": "npm test --prefix src/frontend",
+    "test:all": "npm test && npm run test:frontend",
     "db:migrate": "npx sequelize-cli db:migrate",
     "db:migrate:undo": "npx sequelize-cli db:migrate:undo",
     "db:seed": "npx sequelize-cli db:seed:all",

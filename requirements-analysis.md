@@ -33,7 +33,8 @@ These were **not** in the original stub/TODO-only Core but are now built:
 | **RBAC** | Roles (`admin`, `representative`, `customer`); `permissions` JSON on users; `isActive`; middleware (`authenticate`, `authorize`, `checkPermission`) |
 | **Admin APIs** | Representative management, customer list, dashboard stats, default permission template |
 | **Ticket list (internal)** | Paginated/filtered/sorted list; URL-synced filters; slide-panel detail; state machine for status transitions |
-| **Customer portal** | Role-specific dashboard, status stepper, conversation UI, create modal/FAB |
+| **Customer portal** | Role-specific dashboard, status stepper, conversation UI, create modal/FAB, keyword search + status filter |
+| **Attachments** | Image uploads on ticket create and comments; JWT-gated download; UUID ticket IDs |
 | **Representative management UI** | Admin table, permission editor, active toggle |
 | **Dashboard stats** | Admin/rep/customer metrics; `resolvedAt` column for resolution time |
 | **Settings page** | Profile, email, password, theme preference, admin permission template (view-only) |
@@ -51,7 +52,7 @@ These were **not** in the original stub/TODO-only Core but are now built:
 - Single-tenant deployment (no multi-org isolation)
 - MSSQL available locally or via Azure SQL
 - Demo password `Password123!` acceptable for seed data
-- Customer portal does not need search/filter UI if admin/rep list demonstrates the API feature
+- Customer portal does not need a separate admin-style multi-filter bar; keyword search + status filter on the portal is enough for Core
 
 ## Clarifications
 

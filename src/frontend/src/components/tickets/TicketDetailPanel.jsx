@@ -10,6 +10,7 @@ import { useToast } from '../../context/ToastContext';
 import { formatTicketId } from '../../utils/formatTicketId';
 import { ROLES } from '../../constants/roles';
 import {
+  TICKET_PRIORITIES,
   TICKET_STATUSES,
   formatStatus,
   getTransitionBlockReason,
@@ -18,11 +19,21 @@ import { formatRelativeTime } from '../../utils/formatRelativeTime';
 import Avatar from '../ui/Avatar';
 import Badge from '../ui/Badge';
 import Button from '../ui/Button';
+import Input from '../ui/Input';
 import Select from '../ui/Select';
+import Textarea from '../ui/Textarea';
 import SlidePanel from '../ui/SlidePanel';
 import SkeletonList from '../ui/Skeleton';
 import ImageAttachmentPicker from '../attachments/ImageAttachmentPicker';
 import { AttachmentGallery } from '../attachments/AttachmentImage';
+
+function syncEditFields(ticket) {
+  return {
+    title: ticket?.title || '',
+    description: ticket?.description || '',
+    priority: ticket?.priority || 'medium',
+  };
+}
 
 export default function TicketDetailPanel({
   ticketId,
@@ -40,18 +51,33 @@ export default function TicketDetailPanel({
   const [submittingComment, setSubmittingComment] = useState(false);
   const [updatingStatus, setUpdatingStatus] = useState(false);
   const [updatingAssignee, setUpdatingAssignee] = useState(false);
+  const [updatingFields, setUpdatingFields] = useState(false);
+  const [editFields, setEditFields] = useState({
+    title: '',
+    description: '',
+    priority: 'medium',
+  });
 
   const perms = user?.role === ROLES.ADMIN
     ? { canChangeStatus: true, canAssignTickets: true, canComment: true }
     : user?.permissions || {};
 
+  const canEditFields =
+    user?.role === ROLES.ADMIN || user?.role === ROLES.REPRESENTATIVE;
   const canChangeStatus = user?.role === ROLES.ADMIN || perms.canChangeStatus;
   const canAssign = user?.role === ROLES.ADMIN || perms.canAssignTickets;
   const canComment = user?.role === ROLES.ADMIN || perms.canComment;
 
+  const fieldsDirty =
+    Boolean(ticket) &&
+    (editFields.title.trim() !== (ticket.title || '') ||
+      editFields.description !== (ticket.description || '') ||
+      editFields.priority !== ticket.priority);
+
   useEffect(() => {
     if (!isOpen || !ticketId) {
       setTicket(null);
+      setEditFields({ title: '', description: '', priority: 'medium' });
       return undefined;
     }
 
@@ -61,7 +87,10 @@ export default function TicketDetailPanel({
       setLoading(true);
       try {
         const data = await getTicketById(ticketId);
-        if (!cancelled) setTicket(data);
+        if (!cancelled) {
+          setTicket(data);
+          setEditFields(syncEditFields(data));
+        }
       } catch (err) {
         if (!cancelled) {
           toast.error(err.message || 'Failed to load ticket.');
@@ -86,6 +115,7 @@ export default function TicketDetailPanel({
       await updateTicketStatus(ticket.id, newStatus);
       const refreshed = await getTicketById(ticket.id);
       setTicket(refreshed);
+      setEditFields(syncEditFields(refreshed));
       onTicketUpdated?.(refreshed);
       toast.success(`Status updated to ${formatStatus(newStatus)}`);
     } catch (err) {
@@ -104,12 +134,42 @@ export default function TicketDetailPanel({
       await updateTicket(ticket.id, { assignedTo });
       const refreshed = await getTicketById(ticket.id);
       setTicket(refreshed);
+      setEditFields(syncEditFields(refreshed));
       onTicketUpdated?.(refreshed);
       toast.success('Assignee updated');
     } catch (err) {
       toast.error(err.message || 'Failed to update assignee.');
     } finally {
       setUpdatingAssignee(false);
+    }
+  };
+
+  const handleSaveFields = async (e) => {
+    e.preventDefault();
+    if (!ticket || !canEditFields) return;
+
+    const title = editFields.title.trim();
+    if (!title) {
+      toast.error('Title is required.');
+      return;
+    }
+
+    setUpdatingFields(true);
+    try {
+      await updateTicket(ticket.id, {
+        title,
+        description: editFields.description,
+        priority: editFields.priority,
+      });
+      const refreshed = await getTicketById(ticket.id);
+      setTicket(refreshed);
+      setEditFields(syncEditFields(refreshed));
+      onTicketUpdated?.(refreshed);
+      toast.success('Ticket details updated');
+    } catch (err) {
+      toast.error(err.message || 'Failed to update ticket fields.');
+    } finally {
+      setUpdatingFields(false);
     }
   };
 
@@ -177,13 +237,70 @@ export default function TicketDetailPanel({
             <Badge variant={ticket.priority} type="priority" />
           </div>
 
-          <div>
-            <h3 className="text-label text-surface-500 dark:text-surface-400">Description</h3>
-            <p className="mt-1.5 text-body-sm leading-relaxed text-surface-700 dark:text-surface-300">
-              {ticket.description || 'No description provided.'}
-            </p>
-            <AttachmentGallery ticketId={ticket.id} attachments={ticket.attachments} />
-          </div>
+          {canEditFields ? (
+            <form onSubmit={handleSaveFields} className="space-y-4">
+              <Input
+                label="Title"
+                value={editFields.title}
+                onChange={(e) =>
+                  setEditFields((prev) => ({ ...prev, title: e.target.value }))
+                }
+                required
+                disabled={updatingFields}
+              />
+              <Textarea
+                label="Description"
+                value={editFields.description}
+                onChange={(e) =>
+                  setEditFields((prev) => ({ ...prev, description: e.target.value }))
+                }
+                rows={4}
+                disabled={updatingFields}
+              />
+              <Select
+                label="Priority"
+                value={editFields.priority}
+                onChange={(e) =>
+                  setEditFields((prev) => ({ ...prev, priority: e.target.value }))
+                }
+                disabled={updatingFields}
+              >
+                {TICKET_PRIORITIES.map((p) => (
+                  <option key={p.value} value={p.value}>
+                    {p.label}
+                  </option>
+                ))}
+              </Select>
+              <div className="flex justify-end gap-2">
+                <Button
+                  type="button"
+                  variant="secondary"
+                  size="sm"
+                  disabled={!fieldsDirty || updatingFields}
+                  onClick={() => setEditFields(syncEditFields(ticket))}
+                >
+                  Reset
+                </Button>
+                <Button
+                  type="submit"
+                  size="sm"
+                  disabled={!fieldsDirty || !editFields.title.trim()}
+                  isLoading={updatingFields}
+                >
+                  Save details
+                </Button>
+              </div>
+              <AttachmentGallery ticketId={ticket.id} attachments={ticket.attachments} />
+            </form>
+          ) : (
+            <div>
+              <h3 className="text-label text-surface-500 dark:text-surface-400">Description</h3>
+              <p className="mt-1.5 text-body-sm leading-relaxed text-surface-700 dark:text-surface-300">
+                {ticket.description || 'No description provided.'}
+              </p>
+              <AttachmentGallery ticketId={ticket.id} attachments={ticket.attachments} />
+            </div>
+          )}
 
           <div className="grid gap-4 sm:grid-cols-2">
             {canChangeStatus && (

@@ -2,57 +2,65 @@
 
 ## Summary
 
-**Last run:** 2026-07-18  
+**Last run:** 2026-07-21  
 **Command:** `npm test` (from `ai-practical-assessment/`)  
-**Environment:** Windows, Node 22.22.0, MSSQL with seeded data  
-**Outcome:** ✅ **PASS** — 56 tests passed, 0 failures
+**Environment:** Windows, Node 22, MSSQL with seeded data  
+**Outcome:** ✅ **PASS** — 85 tests passed, 0 failures
 
 ```
-Test Suites: 8 passed, 8 total
-Tests:       56 passed, 56 total
+Test Suites: 11 passed, 11 total
+Tests:       85 passed, 85 total
 ```
-
-> **Since this run:** a `resolved → open` rejection case was added to the status-transition suite, and a new database-free unit suite (`tests/unit/statusTransitions.test.js`) was added. Re-run `npm test` to record the updated totals (expected: 9 suites, one additional integration test plus the unit cases).
 
 ## Test suites
 
-| Suite | File | Tests | Status |
-|-------|------|-------|--------|
-| Health | `tests/health.integration.js` | 1 | ✅ Pass |
-| Auth | `tests/auth.integration.js` | 12 | ✅ Pass |
-| Ticket status transitions | `tests/ticket-status-transitions.integration.js` | 8 | ✅ Pass |
-| Ticket CRUD | `tests/ticket-crud.integration.js` | 10 | ✅ Pass |
-| Ticket RBAC | `tests/ticket-rbac.integration.js` | 9 | ✅ Pass |
-| Ticket assignment | `tests/ticket-assignment.integration.js` | 6 | ✅ Pass |
-| Admin | `tests/admin.integration.js` | 7 | ✅ Pass |
-| Dashboard | `tests/dashboard.integration.js` | 3 | ✅ Pass |
+| Suite | File | Status |
+|-------|------|--------|
+| Health | `tests/health.integration.js` | ✅ Pass |
+| Auth | `tests/auth.integration.js` | ✅ Pass |
+| Ticket status transitions | `tests/ticket-status-transitions.integration.js` | ✅ Pass |
+| Ticket CRUD | `tests/ticket-crud.integration.js` | ✅ Pass |
+| Ticket RBAC | `tests/ticket-rbac.integration.js` | ✅ Pass |
+| Ticket assignment | `tests/ticket-assignment.integration.js` | ✅ Pass |
+| Ticket attachments | `tests/ticket-attachments.integration.js` | ✅ Pass |
+| Admin | `tests/admin.integration.js` | ✅ Pass |
+| Dashboard | `tests/dashboard.integration.js` | ✅ Pass |
+| Status transitions (unit) | `tests/unit/statusTransitions.test.js` | ✅ Pass |
+| Format ticket ID (unit) | `tests/unit/formatTicketId.test.js` | ✅ Pass |
 
 ## Coverage highlights
 
 - **Auth:** login, register, refresh cookie flow, logout, profile update, password validation
-- **Tickets:** CRUD, keyword search, status filter, comments, full state machine, `resolvedAt` side effects
+- **Tickets:** CRUD, field updates, keyword search, status filter, comments, full state machine, `resolvedAt` side effects
+- **Attachments:** image upload on create/comment, fetch by id, validation limits
 - **RBAC:** customer isolation, rep scoping, privileged permissions, admin route protection
 - **Admin:** representative management, deactivation blocks login
 - **Dashboard:** admin org stats, customer/rep role-scoped stats
 - **Assignment:** auto-assign to lowest-queue rep, rep `canCreateTickets`, customer list gating
+- **Unit:** pure state-machine rules; `formatTicketId` display helper
 
-## State machine tests added (final audit)
+## State machine coverage
 
-- `open → cancelled` and `in_progress → cancelled` (valid Core paths)
-- `resolved → open` (non-terminal invalid transition rejected)
-- `closed → open` and `cancelled → open` (terminal rejection)
-- `GET /tickets?status=open` (status filter)
-- Pure unit coverage of the state machine in `tests/unit/statusTransitions.test.js`
+- Valid: `open → in_progress → resolved → closed`, `open → cancelled`, `in_progress → cancelled`
+- Invalid: `open → closed`, `resolved → open`, terminal reopen (`closed`/`cancelled`)
+- Customer 403, missing ticket 404, `resolvedAt` set/cleared
 
 ## Bug fixed during testing
 
-**Representative permissions from MSSQL:** Seeded `permissions` JSON was sometimes returned as a string from the database. `User.getEffectivePermissions()` now parses string values before merging role defaults, so permission flags like `canViewAllTickets` work correctly.
+**Representative permissions from MSSQL:** Seeded `permissions` JSON was sometimes returned as a string. `User.getEffectivePermissions()` parses string values before merging role defaults.
 
 ## Not covered (automated)
 
-- Frontend component / E2E browser tests
-- Manual UI regression across all roles
+- Browser E2E (Playwright/Cypress)
 - Concurrent load / performance testing
+
+## Frontend tests
+
+```bash
+npm run test:frontend
+```
+
+**Last run:** 2026-07-21 — ✅ **25 passed** across 7 Vitest files (login, filter bar, status dropdown, ErrorState, validation, formatTicketId, status helpers). No database required.
 
 ## Re-run
 

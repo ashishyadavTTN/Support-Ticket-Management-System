@@ -3,8 +3,10 @@ import { useNavigate, useSearchParams } from 'react-router-dom';
 import { getTickets } from '../../api/tickets';
 import { getDashboardStats } from '../../api/dashboard';
 import { useAuth } from '../../context/AuthContext';
+import { useDebouncedSearch } from '../../hooks/useDebouncedSearch';
 import Button from '../../components/ui/Button';
 import EmptyState from '../../components/ui/EmptyState';
+import SearchInput from '../../components/ui/SearchInput';
 import SkeletonList, { Skeleton } from '../../components/ui/Skeleton';
 import ErrorState from '../../components/ErrorState';
 import StatusFilterDropdown, { ALL_VALUE } from '../../components/ui/StatusFilterDropdown';
@@ -49,6 +51,7 @@ const STATUS_FILTER_OPTIONS = [
   { value: 'in_progress', label: 'In Progress' },
   { value: 'resolved', label: 'Resolved' },
   { value: 'closed', label: 'Closed' },
+  { value: 'cancelled', label: 'Cancelled' },
 ];
 
 const DEFAULT_STATUS_FILTER = ['open'];
@@ -70,18 +73,26 @@ export default function CustomerPortal() {
   const [statsLoading, setStatsLoading] = useState(true);
   const [error, setError] = useState(null);
   const [statusFilter, setStatusFilter] = useState(DEFAULT_STATUS_FILTER);
+  const {
+    value: searchInput,
+    setValue: setSearchInput,
+    debouncedValue: debouncedSearch,
+    isDebouncing,
+  } = useDebouncedSearch('', 400);
   const [showCreateModal, setShowCreateModal] = useState(
     searchParams.get('create') === 'true'
   );
 
   const firstName = user?.name?.split(' ')[0] || 'there';
-  const isFiltering = !statusFilter.includes(ALL_VALUE);
+  const hasSearch = Boolean(debouncedSearch.trim());
+  const isFiltering = !statusFilter.includes(ALL_VALUE) || hasSearch;
 
   const fetchTickets = useCallback(async () => {
     setLoading(true);
     setError(null);
     try {
       const data = await getTickets({
+        search: debouncedSearch.trim() || undefined,
         status: buildStatusQuery(statusFilter),
         sortBy: 'createdAt',
         sortOrder: 'desc',
@@ -93,7 +104,7 @@ export default function CustomerPortal() {
     } finally {
       setLoading(false);
     }
-  }, [statusFilter]);
+  }, [statusFilter, debouncedSearch]);
 
   const fetchStats = useCallback(async () => {
     setStatsLoading(true);
@@ -138,8 +149,13 @@ export default function CustomerPortal() {
 
   const emptyTitle = isFiltering ? 'No matching requests' : 'No requests yet';
   const emptyDescription = isFiltering
-    ? 'Try selecting a different status or view all requests.'
+    ? 'Try a different keyword or status, or clear your filters.'
     : "Need help? Submit a support request and we'll take care of it.";
+
+  const clearFilters = () => {
+    setStatusFilter([ALL_VALUE]);
+    setSearchInput('');
+  };
 
   return (
     <div className="relative mx-auto max-w-5xl pb-24 md:pb-8">
@@ -207,7 +223,15 @@ export default function CustomerPortal() {
             )}
           </div>
 
-          <div className="flex items-center gap-2.5">
+          <div className="flex flex-col gap-2.5 sm:flex-row sm:items-center">
+            <SearchInput
+              value={searchInput}
+              onChange={(e) => setSearchInput(e.target.value)}
+              placeholder="Search your requests..."
+              isSearching={isDebouncing || (loading && hasSearch)}
+              className="min-w-0 flex-1 sm:w-56"
+              aria-label="Search requests by keyword"
+            />
             <StatusFilterDropdown
               options={STATUS_FILTER_OPTIONS}
               selected={statusFilter}
@@ -236,8 +260,8 @@ export default function CustomerPortal() {
               }
               title={emptyTitle}
               description={emptyDescription}
-              actionLabel={isFiltering ? 'Show all requests' : 'Get help'}
-              onAction={() => (isFiltering ? setStatusFilter([ALL_VALUE]) : setShowCreateModal(true))}
+              actionLabel={isFiltering ? 'Clear filters' : 'Get help'}
+              onAction={() => (isFiltering ? clearFilters() : setShowCreateModal(true))}
             />
           </div>
         ) : (

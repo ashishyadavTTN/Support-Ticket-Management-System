@@ -27,7 +27,7 @@ const User = sequelize.define(
     passwordHash: {
       type: DataTypes.STRING(255),
       allowNull: true,
-      comment: 'Bcrypt hash — populated when authentication is implemented',
+      comment: 'Bcrypt hash — used by login and password-change flows',
     },
     isActive: {
       type: DataTypes.BOOLEAN,

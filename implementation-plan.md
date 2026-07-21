@@ -86,11 +86,12 @@ This section records how the build **diverged** from the original Core scaffold 
 
 ### Still incomplete vs a production system
 
-- No frontend test runner (manual UI validation only)
-- No unit tests for isolated pure functions
+- Broader frontend coverage / browser E2E not configured
 - Admin default permission template is view-only (editing deferred)
 - Admin dashboard has no "trend" metrics (e.g. +N since yesterday)
 - No Docker/CI pipeline or OpenAPI/Swagger spec
+
+Frontend Vitest coverage exists for login, ticket filters, and shared helpers; backend unit coverage exists for `statusTransitions.js` and `formatTicketId.js`.
 
 ## Retrospective
 

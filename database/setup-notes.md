@@ -61,6 +61,8 @@ Migrations run in order:
 3. `create-comments`
 4. `add-rbac-to-users`
 5. `add-resolved-at-to-tickets`
+6. `create-attachments`
+7. `convert-ticket-id-to-uuid`
 
 Undo last migration:
 

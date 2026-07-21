@@ -54,14 +54,15 @@ Full API and schema details live in `api-contract.md` and `data-model.md` at the
 
 | Method | Path | Purpose |
 |--------|------|---------|
-| POST | `/tickets` | Create ticket |
+| POST | `/tickets` | Create ticket (JSON or multipart images) |
 | GET | `/tickets` | List tickets (search, filter, sort, paginate) |
 | GET | `/tickets/assignees` | Active reps for assign dropdown |
-| GET | `/tickets/:id` | Ticket detail + comments |
+| GET | `/tickets/:id` | Ticket detail + comments + attachments |
 | PUT | `/tickets/:id` | Update title, description, priority, assignee |
 | PATCH | `/tickets/:id/status` | Status transition (state machine) |
-| POST | `/tickets/:id/comments` | Add comment |
+| POST | `/tickets/:id/comments` | Add comment (JSON or multipart images) |
 | GET | `/tickets/:id/comments` | List comments |
+| GET | `/tickets/:id/attachments/:attachmentId` | Download image attachment |
 
 ### Health
 
@@ -93,14 +94,20 @@ Setting status to `resolved` sets `resolvedAt`; leaving `resolved` clears it.
 
 ### Tickets
 
+- UUID primary key
 - FK `createdBy` → User (customer)
 - FK `assignedTo` → User (representative, nullable)
 - Fields: `title`, `description`, `status`, `priority`, `resolvedAt`, timestamps
 
 ### Comments
 
-- FK `ticketId` → Ticket, `authorId` → User
+- FK `ticketId` → Ticket, `createdBy` → User
 - Field: `message`, timestamps
+
+### Attachments
+
+- FK `ticketId` → Ticket; optional `commentId` → Comment
+- Image metadata + files on disk (`src/uploads/tickets/`, gitignored)
 
 No status-history table — resolution timing uses `Tickets.resolvedAt` only.
 
@@ -142,7 +149,11 @@ No status-history table — resolution timing uses `Tickets.resolvedAt` only.
 | `/tickets/new` | Redirects to `?create=true` (opens create modal) |
 | `/customer/settings` | Profile, password, theme |
 
-**Customer create flow:** "Get help" modal (`CustomerCreateTicketModal`) — title, description, priority.
+**Customer create flow:** "Get help" modal (`CustomerCreateTicketModal`) — title, description, priority, optional images.
+
+**Customer list:** keyword search + status filter on `CustomerPortal`.
+
+**Admin/rep detail panel:** editable title, description, priority; status; assignee; comments/attachments.
 
 **Shared UI primitives:** `Modal`, `SlidePanel`, `Input`, `Textarea`, `Select`, `Button`, `Toast`, dark mode via `ThemeContext`.
 
@@ -152,8 +163,8 @@ No status-history table — resolution timing uses `Tickets.resolvedAt` only.
 
 - Status history / audit log table
 - Email notifications or webhooks
-- File attachments on tickets or comments
 - Real-time updates (WebSockets / SSE)
 - Multi-tenant organizations
-- Frontend automated test suite
+- Browser E2E suite (Playwright/Cypress)
 - Production deployment / CI pipeline
+- OpenAPI/Swagger (documented in `api-contract.md` instead)

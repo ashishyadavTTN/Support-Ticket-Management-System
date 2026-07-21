@@ -27,15 +27,15 @@ src/frontend/src/
   hooks/         — useTicketFilters, useDebouncedSearch
 
 src/backend/
-  models/        — User, Ticket, Comment + index.js associations
+  models/        — User, Ticket, Comment, Attachment + index.js associations
   routes/        — auth, admin, dashboard, tickets
   controllers/   — request handlers
-  middleware/    — authenticate, authorize, checkPermission, validate, errorHandler
-  constants/     — roles, permissions, statusTransitions
+  middleware/    — authenticate, authorize, checkPermission, validate, upload, errorHandler
+  constants/     — roles, permissions, statusTransitions, attachments
 
 database/migrations/   — Sequelize migrations (run from repo root)
 database/seed-data/    — Demo seeders
-tests/                 — Jest integration tests
+tests/                 — Jest integration + unit tests
 ```
 
 - Env vars in `src/backend/.env` (see `.env.example`); never commit secrets
@@ -49,17 +49,18 @@ tests/                 — Jest integration tests
 |------|--------|
 | Auth (JWT + refresh) | ✅ |
 | RBAC (roles, permissions, isActive) | ✅ |
-| Ticket CRUD + comments + status machine | ✅ |
+| Ticket CRUD + field edits + comments + status machine | ✅ |
+| Image attachments + UUID ticket IDs | ✅ |
 | Admin APIs (reps, customers, dashboard stats) | ✅ |
 | Settings API (profile, email, password) | ✅ |
 | Frontend design system + dark mode | ✅ |
-| Admin/rep ticket list + customer portal | ✅ |
+| Admin/rep ticket list + customer portal (search + status filter) | ✅ |
 | Representatives management UI | ✅ |
 | Dashboard stats (`resolvedAt`) | ✅ |
 | Settings page | ✅ |
 | UX polish (loading bar, debounced search, breadcrumbs) | ✅ |
-| Integration tests | ✅ 56 tests across 8 suites (auth, CRUD, RBAC, status machine, admin, dashboard, assignment) |
-| Frontend automated tests | ❌ None |
+| Backend tests | ✅ 85 tests across 11 suites |
+| Frontend automated tests | ✅ Vitest — 25 tests (`npm run test:frontend`) |
 
 ## Key Files
 
@@ -83,4 +84,3 @@ npm test
 ```
 
 Demo password (seeded users): `Password123!`
-

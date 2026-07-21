@@ -10,11 +10,11 @@ AI (Cursor) was used across the entire project lifecycle: scaffolding, design de
 |----------|------|------------------------|-------------|
 | Planning | `ai-prompts/planning.md` | 3 | Scaffold structure, RBAC plan, auth design |
 | Design | `ai-prompts/design.md` | 6 | Schema, permissions model, JWT, ticket scoping |
-| Implementation | `ai-prompts/implementation.md` | 11 | Backend, frontend, auth, Vite proxy fix |
-| Testing | `ai-prompts/testing.md` | 6 | Jest setup, suite implementation, audit gaps |
+| Implementation | `ai-prompts/implementation.md` | 15 | Backend, frontend, auth, attachments, UUID, Core UI fixes |
+| Testing | `ai-prompts/testing.md` | 8 | Jest setup, suites, audit gaps, refreshed totals |
 | Debugging | `ai-prompts/debugging.md` | 5 | Sequelize CLI, MSSQL connection, SPA refresh |
-| Code review | `ai-prompts/code-review.md` | 3 | Model init, password scope, migration strategy |
-| Documentation | `ai-prompts/documentation.md` | 6 | API contract, data model, debugging notes |
+| Code review | `ai-prompts/code-review.md` | 5 | Model init, password scope, doc/UI audit fixes |
+| Documentation | `ai-prompts/documentation.md` | 7 | API contract, data model, final doc sync |
 
 ## Acceptance Rate
 
@@ -22,8 +22,8 @@ Estimated from prompt log tables (not every session was logged):
 
 | Outcome | Approx. share | Examples |
 |---------|---------------|----------|
-| **Accepted as-is** | ~70% | Scaffold structure, JWT cookie design, Tailwind component patterns |
-| **Changed before merge** | ~25% | Permissions JSON parsing, Vite proxy bypass, seed persona distribution |
+| **Accepted as-is** | ~65% | Scaffold structure, JWT cookie design, Tailwind component patterns |
+| **Changed before merge** | ~30% | Permissions JSON parsing, Vite proxy bypass, attachment limits, doc sync |
 | **Rejected** | ~5% | Double `User.init()`, UI-only access control suggestions |
 
 ## Key Learnings
@@ -31,7 +31,7 @@ Estimated from prompt log tables (not every session was logged):
 1. **Persistent context files pay off** — `project-context.md` reduced repeated stack explanations
 2. **Log rejections, not just accepts** — shows judgment; the double-`User.init()` rejection is good evidence
 3. **Validate security suggestions manually** — AI proposed patterns that looked correct but missed MSSQL JSON string behavior
-4. **Keep docs in sync with code** — stale `acceptance-criteria.md` would have hurt grading more than missing a stretch feature
+4. **Keep docs in sync with code** — stale "attachments not implemented" / wrong test counts hurt more than missing a stretch feature
 5. **Integration tests are the best AI validation loop** — `npm test` catches regressions from accepted AI diffs quickly
 
 ## Recommendations

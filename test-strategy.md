@@ -6,49 +6,54 @@
 
 | Area | Coverage |
 |------|----------|
-| Backend unit | Pure state-machine logic (`tests/unit/statusTransitions.test.js`) — no DB required |
+| Backend unit | `tests/unit/statusTransitions.test.js`, `tests/unit/formatTicketId.test.js` |
 | Backend HTTP smoke | `GET /health` via Supertest |
-| Backend integration harness | Jest configured in `src/backend/package.json`; tests live in `tests/` at repo root |
+| Backend integration harness | Jest in `src/backend/package.json`; tests in repo-root `tests/` |
 | Auth integration | Login, register, refresh, logout, profile, password validation |
-| Ticket integration | CRUD, comments, keyword search, status filter, status state machine, `resolvedAt` |
+| Ticket integration | CRUD, field updates, comments, keyword search, status filter, state machine, `resolvedAt` |
+| Attachments | Image upload on create/comment, fetch, validation |
 | RBAC integration | Customer isolation, rep scoping, permissions, admin route protection |
-| Admin integration | Representatives, customers, deactivation |
-| Dashboard integration | Admin and role-scoped stats |
-| Ticket assignment | Auto-assign on customer create, rep `canCreateTickets`, customer list endpoint |
+| Admin / dashboard / assignment | Rep management, stats, auto-assign |
 
 ### Out of scope / not implemented
 
 | Area | Status |
 |------|--------|
-| Frontend unit/component tests | No test runner configured in `src/frontend/` |
+| Frontend unit/component tests | Vitest + React Testing Library in `src/frontend/` (`npm run test:frontend`) |
 | E2E browser tests | None |
-| Broader backend unit tests | Only `statusTransitions.js` has a dedicated unit suite; other helpers are still covered via integration |
+| Broader backend unit tests | Other helpers covered via integration |
 
 ---
 
 ## Unit Tests
 
-**Location:** `tests/unit/statusTransitions.test.js`
+**Location:** `tests/unit/`
 
-The status state machine is pure logic, so it gets a dedicated, database-free unit suite covering `getAllowedTransitions` and `isValidTransition`: every required valid path, representative invalid paths (including `resolved → open` and terminal reopens), no-op transitions, unknown statuses, and an invariant check that all configured targets are known statuses.
-
-Other backend helpers remain covered indirectly through the integration suites; broadening isolated unit coverage is a future improvement.
+- **`statusTransitions.test.js`** — valid Core paths, invalid paths (including `resolved → open` and terminal reopens), no-ops, unknown statuses
+- **`formatTicketId.test.js`** — short display formatting for UUID ticket ids
 
 ---
 
 ## Component Tests
 
-**None.** React components are validated manually across admin, rep, and customer flows.
+**Location:** `src/frontend/src/**/*.test.{js,jsx}`  
+**Runner:** Vitest + React Testing Library (`npm run test:frontend`)
+
+| Area | Coverage |
+|------|----------|
+| `LoginPage` | Client validation, successful login redirect, API error alert |
+| `TicketFilterBar` | Admin-only assignee filter, search forwarding, status chips / clear |
+| `StatusFilterDropdown` | Multi-select status options |
+| `ErrorState` | Message + retry callback |
+| Utils / constants | `validation`, `formatTicketId`, frontend status-transition helpers |
 
 ---
 
 ## API Integration Tests
 
-**Location:** `tests/*.integration.js` (8 files)
+**Location:** `tests/*.integration.js` (9 files) + 2 unit files → **11 suites / 85 tests** (see `test-results.md`)
 
-**Framework:** Jest + Supertest; `app` imported from `src/backend/app.js` (no live server required).
-
-**Helpers:** `tests/setup.js`, `tests/helpers/testApi.js`
+**Framework:** Jest + Supertest; `app` from `src/backend/app.js`.
 
 **Status machine coverage** (`ticket-status-transitions.integration.js`):
 
@@ -69,20 +74,16 @@ Other backend helpers remain covered indirectly through the integration suites; 
 - Keyword search (`?search=password`)
 - Status filter (`?status=open`)
 
-See `test-results.md` for the latest run output.
-
 ---
 
 ## Edge Case Tests
 
 | Behavior | Test coverage |
 |----------|---------------|
-| Invalid status transitions | `ticket-status-transitions.integration.js` |
-| Terminal status rejection | `ticket-status-transitions.integration.js` |
+| Invalid / terminal status transitions | `ticket-status-transitions.integration.js` |
 | Customer cannot access others' tickets | `ticket-rbac.integration.js` |
-| Customer list filter | `ticket-rbac.integration.js` |
 | Deactivated user blocked at login | `admin.integration.js` |
-| `resolvedAt` set/cleared on status change | `ticket-status-transitions.integration.js` |
+| Attachment validation / access | `ticket-attachments.integration.js` |
 | MSSQL permissions JSON as string | Fixed in `User.js`; covered by RBAC tests |
 | Concurrent 401 refresh deduplication | Manual only (`api/client.js`) |
 
@@ -90,21 +91,16 @@ See `test-results.md` for the latest run output.
 
 ## How to run
 
-From repo root:
-
 ```bash
 npm test
 ```
 
-Equivalent to `npm test --prefix src/backend` → `jest --runInBand`.
-
-**Requirements:** Configured `src/backend/.env`, migrated schema, and seeded data. All suites except health check require database connectivity.
+**Requirements:** Configured `src/backend/.env`, migrated schema, and seeded data.
 
 ---
 
 ## Remaining gaps (honest)
 
-1. **Frontend** — no automated component or E2E tests
-2. **Unit tests** — only the status state machine has a dedicated unit suite; other pure helpers are covered via integration
-3. **Customer portal** — search/filter UI not implemented (admin/rep list has filters; API supports both)
-4. **Load / performance** — not tested
+1. **E2E** — no Playwright/Cypress browser suite
+2. **Broader unit tests** — many backend helpers still integration-only
+3. **Load / performance** — not tested

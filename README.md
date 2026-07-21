@@ -10,7 +10,7 @@ A full-stack support ticket platform built as an AI capability exercise. Custome
 | Backend | Node.js, Express 4, Sequelize 6 |
 | Database | **Microsoft SQL Server** (via `tedious` driver) |
 | Auth | JWT access tokens (memory) + httpOnly refresh cookies |
-| Tests | Jest + Supertest (backend integration tests in `tests/`) |
+| Tests | Jest + Supertest (backend); Vitest + Testing Library (frontend) |
 
 ## Prerequisites
 
@@ -79,13 +79,25 @@ Set `VITE_API_BASE_URL` to your backend origin if the frontend is not served beh
 
 ### 4. Run tests
 
-From the repo root:
+**Backend** (from repo root — needs MSSQL + seed):
 
 ```bash
 npm test
 ```
 
-Runs Jest in `src/backend/` against tests in `tests/`. See `test-results.md` for the latest run output.
+**Frontend** (Vitest + React Testing Library — no DB required):
+
+```bash
+npm run test:frontend
+```
+
+**Both:**
+
+```bash
+npm run test:all
+```
+
+See `test-results.md` for the latest recorded backend run output.
 
 ### Demo accounts
 

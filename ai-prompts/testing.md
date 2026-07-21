@@ -8,6 +8,9 @@
 | **Implement full integration test suites for auth, CRUD, RBAC, admin, dashboard** | Prompt: "Replace all `it.todo` in tests/ with real Supertest cases using seeded users from testApi.js. Cover login, customer isolation, status machine valid+invalid paths, and admin rep management." → Created 7 suite files with login helpers | Y | Y | N | AI initially used wrong error message assertions; fixed to match actual `errorHandler` output |
 | **Fix RBAC tests failing on MSSQL permissions** | Prompt: "ticket-rbac tests show canViewAllTickets false for Diana — permissions JSON may be a string from MSSQL" → AI suggested parsing in `getEffectivePermissions()` | N | Y | N | Correct diagnosis; I applied parse logic and re-ran tests |
 | **Add missing state machine cases from audit** | Prompt: "Add integration tests for open→cancelled, in_progress→cancelled, terminal status rejection, and GET /tickets?status=open. Do not duplicate existing happy-path chain test." → 4 new cases in status + CRUD suites | Y | N | N | Closes mandatory Core checklist gaps identified in pre-submission review |
+| Add attachment + UUID coverage | `tests/ticket-attachments.integration.js` plus unit suite `formatTicketId.test.js`; status machine unit suite already present | Y | N | N | Stretch features need automated checks; pure helpers stay DB-free |
+| Refresh `test-results.md` after audit fixes | Re-ran `npm test` → **11 suites, 85 passed** | Y | N | N | Replaced stale 56/8 totals across submission docs |
+| Add frontend Vitest + Testing Library suite | Configured Vitest in Vite; tests for LoginPage, TicketFilterBar, StatusFilterDropdown, ErrorState, validation, formatTicketId, status helpers → **25 passed** | Y | Y | N | Needed `matchMedia` mock for ThemeProvider; used accessible queries for required field labels |
 
 ## Iteration example (permissions bug)
 

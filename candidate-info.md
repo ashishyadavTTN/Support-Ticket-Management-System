@@ -22,15 +22,15 @@ Support Ticket Management System
 
 ## Assessment Start Date
 
-2026-01-01
+2026-07-18
 
 ## Submission Date
 
-2026-07-18
+2026-07-21
 
 ## Project Summary
 
-Built a full-stack support ticket platform with JWT authentication, role-based access control (admin, representative, customer), ticket CRUD with enforced status state machine, comments, keyword search and status filtering, and role-specific React UIs. Backend integration test suite covers auth, RBAC, CRUD, state transitions, admin management, dashboards, and ticket auto-assignment.
+Built a full-stack support ticket platform with JWT authentication, role-based access control (admin, representative, customer), ticket CRUD with enforced status state machine, comments, keyword search and status filtering (admin/rep and customer UIs), image attachments, and role-specific React UIs. Backend test suite (85 tests across 11 suites) covers auth, RBAC, CRUD, attachments, state transitions, admin management, dashboards, and ticket auto-assignment.
 
 ## Tools Used
 
@@ -46,6 +46,6 @@ Built a full-stack support ticket platform with JWT authentication, role-based a
 2. Copy `src/backend/.env.example` → `src/backend/.env` and configure MSSQL credentials
 3. `npm run db:migrate` && `npm run db:seed`
 4. `npm run dev` — frontend :5173, backend :3001
-5. `npm test` — 56 integration tests against seeded database
+5. `npm test` — 85 tests (11 suites) against seeded database
 
 See `README.md` and `database/setup-notes.md` for details.

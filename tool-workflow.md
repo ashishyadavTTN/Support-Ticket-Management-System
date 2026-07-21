@@ -45,7 +45,7 @@ I accepted most backend structure suggestions but manually verified auth flow, c
 
 ## Validation
 
-- **Automated:** `npm test` after backend changes (56 integration tests at submission)
+- **Automated:** `npm test` after backend changes (85 tests / 11 suites at latest run — see `test-results.md`)
 - **Manual:** login as each seeded role, create ticket, change status, verify 403 for wrong role
 - **Docs:** compared `api-contract.md` to actual routes after each API change
 
